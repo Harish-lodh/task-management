@@ -5,7 +5,8 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/auth.js";
 import ticketRoutes from "./routes/tickets.js";
-import projectRoutes from "./routes/projects.js";
+// ❌ remove: import projectRoutes from "./routes/projects.js";
+import userRoutes from "./routes/users.js"; // 👈 add this
 
 dotenv.config();
 
@@ -22,7 +23,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
-app.use("/api/projects", projectRoutes);
+// ❌ remove: app.use("/api/projects", projectRoutes);
+app.use("/api/users", userRoutes); // 👈 add this line
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);

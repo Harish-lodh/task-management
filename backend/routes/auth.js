@@ -42,7 +42,7 @@ router.post("/login", async (req, res) => {
       [email]
     );
     if (!users.length) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "user not found" });
     }
 
     const user = users[0];

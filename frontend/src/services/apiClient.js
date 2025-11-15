@@ -1,33 +1,13 @@
-const API_BASE_URL = 'http://localhost:5000';
+import axios from "axios";
 
-export const apiClient = {
-  async get(endpoint) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`);
-    return response.json();
-  },
+const apiClient = axios.create({
+  baseURL: "http://localhost:5000/api",
+});
 
-  async post(endpoint, data) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return response.json();
-  },
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-  async put(endpoint, data) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return response.json();
-  },
-
-  async delete(endpoint) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'DELETE',
-    });
-    return response.json();
-  },
-};
+export default apiClient;

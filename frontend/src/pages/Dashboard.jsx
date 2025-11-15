@@ -4,7 +4,6 @@ import {
   Add as AddIcon,
   ViewKanban as BoardIcon,
   TableChart as TableIcon,
-  CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
 import Board from '../components/board/Board';
 import CreateTicket from './CreateTicket';
@@ -78,12 +77,12 @@ const Dashboard = () => {
         >
           List
         </Button>
-        <Button
+        {/* <Button
           startIcon={<CalendarIcon />}
           className="normal-case text-gray-500"
         >
           Calendar
-        </Button>
+        </Button> */}
       </Box>
 
       <Board

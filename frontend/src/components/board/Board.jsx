@@ -1,21 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import apiClient from "../../services/apiClient"; // 👈 adjust path if needed
 
-const initialData = {
-  todo: [
-    { id: "task-2", title: "Task 2" },
-    { id: "task-3", title: "Task 3" },
-  ],
-  inProgress: [
-    { id: "task-1", title: "Task 1" },
-  ],
+const emptyData = {
+  todo: [],
+  inProgress: [],
   complete: [],
 };
 
 export default function Board() {
-  const [tasks, setTasks] = useState(initialData);
+  const [tasks, setTasks] = useState(emptyData);
 
-  // Handle drag & drop
+  // ✅ Fetch tasks from backend on mount
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const { data } = await apiClient.get("/tickets/board");
+
+        const grouped = {
+          todo: [],
+          inProgress: [],
+          complete: [],
+        };
+
+        (data || []).forEach((t) => {
+          let colKey = "todo";
+
+          if (t.status === "todo") colKey = "todo";
+          else if (t.status === "progress") colKey = "inProgress";
+          else if (t.status === "completed") colKey = "complete";
+
+          grouped[colKey].push({
+            id: String(t.id), // draggableId must be string
+            title: t.title,
+            // you can store more fields if needed: description, assignee, etc.
+            raw: t,
+          });
+        });
+
+        setTasks(grouped);
+      } catch (err) {
+        console.error("Failed to load board tasks:", err);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
+  // Handle drag & drop (UI only for now)
   const onDragEnd = (result) => {
     if (!result.destination) return;
 
@@ -23,7 +55,7 @@ export default function Board() {
 
     // If the same column
     if (source.droppableId === destination.droppableId) {
-      const column = [...tasks[source.droppableId]];
+      const column = [...(tasks[source.droppableId] || [])];
       const [removed] = column.splice(source.index, 1);
       column.splice(destination.index, 0, removed);
 
@@ -32,8 +64,8 @@ export default function Board() {
     }
 
     // Moving between columns
-    const sourceCol = [...tasks[source.droppableId]];
-    const destCol = [...tasks[destination.droppableId]];
+    const sourceCol = [...(tasks[source.droppableId] || [])];
+    const destCol = [...(tasks[destination.droppableId] || [])];
     const [removed] = sourceCol.splice(source.index, 1);
     destCol.splice(destination.index, 0, removed);
 
@@ -42,6 +74,9 @@ export default function Board() {
       [source.droppableId]: sourceCol,
       [destination.droppableId]: destCol,
     });
+
+    // ⚠️ Optional: here later you can call PATCH /api/tickets/:id
+    // to update status in backend based on destination.droppableId
   };
 
   const columns = [
@@ -65,13 +100,13 @@ export default function Board() {
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-gray-700">{title}</h2>
                   <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
-                    {tasks[key].length}
+                    {(tasks[key] || []).length}
                   </span>
                 </div>
 
                 {/* Column Body */}
                 <div className={`p-3 rounded-lg ${color} min-h-[400px]`}>
-                  {tasks[key].map((task, index) => (
+                  {(tasks[key] || []).map((task, index) => (
                     <Draggable
                       key={task.id}
                       draggableId={task.id}
@@ -96,8 +131,10 @@ export default function Board() {
                   ))}
                   {provided.placeholder}
 
-                  {/* Add task button */}
-                  <button className="mt-3 text-blue-600 text-sm">+ Add Task</button>
+                  {/* Add task button (opens your CreateTicket dialog) */}
+                  <button className="mt-3 text-blue-600 text-sm">
+                    + Add Task
+                  </button>
                 </div>
               </div>
             )}

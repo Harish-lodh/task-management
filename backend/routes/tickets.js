@@ -4,16 +4,30 @@ import { authRequired, requireRole } from "../middleware/auth.js";
 
 const router = Router();
 
-// Get all tickets (ADMIN) or own assigned (USER)
+/* ---------- helpers ---------- */
+
+function normalizeStatus(raw) {
+  if (!raw) return "todo";
+  const s = String(raw).toLowerCase().trim();
+
+  if (s === "todo" || s === "to do") return "todo";
+  if (s.includes("progress")) return "progress";
+  if (s === "complete" || s === "completed") return "completed";
+
+  return "todo";
+}
+
+/* ---------- GET /api/tickets ----------
+ * ADMIN -> all tickets
+ * USER  -> only tickets assigned to them
+ ---------------------------------------- */
 router.get("/", authRequired, async (req, res) => {
   try {
     let sql = `
-      SELECT t.*, 
-             p.name AS project_name,
+      SELECT t.*,
              u1.name AS created_by_name,
              u2.name AS assigned_to_name
       FROM tickets t
-      LEFT JOIN projects p ON t.project_id = p.id
       LEFT JOIN users u1 ON t.created_by = u1.id
       LEFT JOIN users u2 ON t.assigned_to = u2.id
     `;
@@ -34,14 +48,32 @@ router.get("/", authRequired, async (req, res) => {
   }
 });
 
-// Board view: tickets for one project grouped by status (frontend groups)
-router.get("/board/:projectId", authRequired, async (req, res) => {
+/* ---------- GET /api/tickets/board ----------
+ * Board view:
+ * ADMIN -> all tickets
+ * USER  -> only their tickets
+ * Frontend groups by status (todo/progress/completed)
+ ----------------------------------------------- */
+router.get("/board", authRequired, async (req, res) => {
   try {
-    const projectId = req.params.projectId;
-    const [rows] = await pool.query(
-      "SELECT * FROM tickets WHERE project_id = ? ORDER BY created_at DESC",
-      [projectId]
-    );
+    let sql = `
+      SELECT t.*,
+             u1.name AS created_by_name,
+             u2.name AS assigned_to_name
+      FROM tickets t
+      LEFT JOIN users u1 ON t.created_by = u1.id
+      LEFT JOIN users u2 ON t.assigned_to = u2.id
+    `;
+    const params = [];
+
+    if (req.user.role === "USER") {
+      sql += " WHERE t.assigned_to = ?";
+      params.push(req.user.id);
+    }
+
+    sql += " ORDER BY t.created_at DESC";
+
+    const [rows] = await pool.query(sql, params);
     res.json(rows);
   } catch (err) {
     console.error("Board error:", err);
@@ -49,32 +81,45 @@ router.get("/board/:projectId", authRequired, async (req, res) => {
   }
 });
 
-// Create ticket (ADMIN; or allow USER also if you want)
+/* ---------- POST /api/tickets ----------
+ * Create ticket
+ * - ADMIN: can create for anyone
+ * - USER : can create, by default assign_to themselves (if not provided)
+ ----------------------------------------- */
 router.post("/", authRequired, async (req, res) => {
   try {
     const {
       title,
       description,
-      project_id,
       assigned_to,
-      status = "Backlog",
-      priority = "Low",
       start_date,
       end_date,
+      priority = "low",
+      status: rawStatus,
     } = req.body;
 
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
     const created_by = req.user.id;
+    const status = normalizeStatus(rawStatus);
+
+    // If a normal user tries to create for someone else, force to themselves
+    let assignedToFinal = assigned_to || null;
+    if (req.user.role === "USER") {
+      assignedToFinal = req.user.id;
+    }
 
     const [result] = await pool.query(
-      `INSERT INTO tickets 
-       (title, description, project_id, created_by, assigned_to, status, priority, start_date, end_date)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO tickets
+       (title, description, created_by, assigned_to, status, priority, start_date, end_date)
+       VALUES (?,?,?,?,?,?,?,?)`,
       [
-        title,
-        description,
-        project_id || null,
+        title.trim(),
+        description || null,
         created_by,
-        assigned_to || null,
+        assignedToFinal,
         status,
         priority,
         start_date || null,
@@ -89,11 +134,14 @@ router.post("/", authRequired, async (req, res) => {
   }
 });
 
-// Update ticket (title/description/status etc.)
+/* ---------- PATCH /api/tickets/:id ----------
+ * Update title / description / status / etc.
+ * (Basic rule: allow anyone who is logged in; you can tighten later)
+ --------------------------------------------- */
 router.patch("/:id", authRequired, async (req, res) => {
   try {
     const id = req.params.id;
-    const {
+    let {
       title,
       description,
       status,
@@ -103,15 +151,19 @@ router.patch("/:id", authRequired, async (req, res) => {
       assigned_to,
     } = req.body;
 
+    if (status) {
+      status = normalizeStatus(status);
+    }
+
     const [result] = await pool.query(
-      `UPDATE tickets 
-       SET 
-         title = COALESCE(?, title),
+      `UPDATE tickets
+       SET
+         title       = COALESCE(?, title),
          description = COALESCE(?, description),
-         status = COALESCE(?, status),
-         priority = COALESCE(?, priority),
-         start_date = COALESCE(?, start_date),
-         end_date = COALESCE(?, end_date),
+         status      = COALESCE(?, status),
+         priority    = COALESCE(?, priority),
+         start_date  = COALESCE(?, start_date),
+         end_date    = COALESCE(?, end_date),
          assigned_to = COALESCE(?, assigned_to)
        WHERE id = ?`,
       [
@@ -133,7 +185,9 @@ router.patch("/:id", authRequired, async (req, res) => {
   }
 });
 
-// Delete ticket (ADMIN only)
+/* ---------- DELETE /api/tickets/:id ----------
+ * Only admin can delete
+ ---------------------------------------------- */
 router.delete("/:id", authRequired, requireRole("ADMIN"), async (req, res) => {
   try {
     const id = req.params.id;
