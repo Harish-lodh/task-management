@@ -1,15 +1,24 @@
-import TicketCard from "./TicketCard";
+import React from 'react';
+import { Box } from '@mui/material';
+import Column from './Column';
 
-export default function Column({ title, items }) {
+const Board = ({ tasks, onAddTask, onUpdateTask, onDeleteTask }) => {
+  const statuses = ['TO DO', 'IN PROGRESS', 'COMPLETE'];
+
   return (
-    <div className="w-80 bg-gray-100 p-3 rounded shadow">
-      <h3 className="font-bold text-lg mb-3">{title}</h3>
-
-      <div className="space-y-3">
-        {items.map((t) => (
-          <TicketCard key={t.id} ticket={t} />
-        ))}
-      </div>
-    </div>
+    <Box className="flex gap-6 overflow-x-auto pb-4">
+      {statuses.map((status) => (
+        <Column
+          key={status}
+          status={status}
+          tasks={tasks.filter((task) => task.status === status)}
+          onAddTask={onAddTask}
+          onUpdateTask={onUpdateTask}
+          onDeleteTask={onDeleteTask}
+        />
+      ))}
+    </Box>
   );
-}
+};
+
+export default Board;

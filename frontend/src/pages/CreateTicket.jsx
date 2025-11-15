@@ -1,82 +1,72 @@
-import { useState } from "react";
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-import apiClient from "../services/apiClient";
+import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material';
 
-export default function CreateTicket() {
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    assigned_to: "",
-    start_date: "",
-    end_date: "",
-    priority: "Low",
-  });
+const CreateTicket = ({ open, onClose, onSave, defaultStatus }) => {
+  const [title, setTitle] = useState('');
+  const [assignee, setAssignee] = useState('');
+  const [status, setStatus] = useState(defaultStatus || 'TO DO');
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
-  const submit = async () => {
-    await apiClient.post("/tickets/create", form);
-    alert("Ticket created!");
+  const handleSave = () => {
+    if (title.trim()) {
+      onSave({ title, assignee, status });
+      setTitle('');
+      setAssignee('');
+      setStatus(defaultStatus || 'TO DO');
+      onClose();
+    }
   };
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <div className="flex-1">
-        <Navbar />
-
-        <div className="p-6">
-          <h2 className="text-2xl font-bold mb-4">Create Ticket</h2>
-
-          <div className="space-y-3 max-w-lg">
-            <input
-              name="title"
-              onChange={handleChange}
-              placeholder="Title"
-              className="input border p-2 w-full"
-            />
-
-            <textarea
-              name="description"
-              onChange={handleChange}
-              placeholder="Description"
-              className="input border p-2 w-full h-28"
-            />
-
-            <label>Start Date</label>
-            <input
-              type="date"
-              name="start_date"
-              className="border p-2 w-full"
-              onChange={handleChange}
-            />
-
-            <label>End Date</label>
-            <input
-              type="date"
-              name="end_date"
-              className="border p-2 w-full"
-              onChange={handleChange}
-            />
-
-            <select
-              name="priority"
-              onChange={handleChange}
-              className="border p-2 w-full"
-            >
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-            </select>
-
-            <button onClick={submit} className="bg-blue-600 text-white py-2 px-4 rounded">
-              Create Ticket
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Create New Task</DialogTitle>
+      <DialogContent>
+        <TextField
+          autoFocus
+          margin="dense"
+          label="Task Title"
+          fullWidth
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="mb-4"
+        />
+        <TextField
+          margin="dense"
+          label="Assignee"
+          fullWidth
+          value={assignee}
+          onChange={(e) => setAssignee(e.target.value)}
+          className="mb-4"
+        />
+        <FormControl fullWidth>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={status}
+            label="Status"
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <MenuItem value="TO DO">To Do</MenuItem>
+            <MenuItem value="IN PROGRESS">In Progress</MenuItem>
+            <MenuItem value="COMPLETE">Complete</MenuItem>
+          </Select>
+        </FormControl>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} variant="contained">Create Task</Button>
+      </DialogActions>
+    </Dialog>
   );
-}
+};
+
+export default CreateTicket;

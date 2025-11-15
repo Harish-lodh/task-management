@@ -1,16 +1,25 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-import Tickets from "./pages/Tickets";
-import CreateTicket from "./pages/CreateTicket";
+import React, { useState } from 'react';
+import { Box } from '@mui/material';
+import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import Dashboard from './pages/Dashboard';
 
-export default function App() {
+function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/tickets" element={<Tickets />} />
-        <Route path="/create-ticket" element={<CreateTicket />} />
-      </Routes>
-    </BrowserRouter>
+    <Box className="flex min-h-screen bg-white">
+      <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar open={sidebarOpen} />
+      <Box 
+        component="main" 
+        className="flex-grow transition-all duration-300"
+        sx={{ mt: 8, ml: sidebarOpen ? '240px' : 0 }}
+      >
+        <Dashboard />
+      </Box>
+    </Box>
   );
 }
+
+export default App;

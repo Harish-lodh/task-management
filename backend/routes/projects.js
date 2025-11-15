@@ -16,8 +16,9 @@ router.get("/", authRequired, async (req, res) => {
 });
 
 // Create project
-router.post("/", authRequired, async (req, res) => {
+router.post("/create", async (req, res) => {
   try {
+    
     const { name, description } = req.body;
     const created_by = req.user.id;
 
