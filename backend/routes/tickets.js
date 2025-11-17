@@ -163,7 +163,8 @@ router.patch("/:id", authRequired, async (req, res) => {
     if (status) {
       status = normalizeStatus(status);
     }
-
+    console.log(status)
+console.log(req.body)
     const [result] = await pool.query(
       `UPDATE tickets
        SET

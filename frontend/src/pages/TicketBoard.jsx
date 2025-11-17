@@ -143,7 +143,7 @@ export default function TicketBoardMUI() {
           title: t.title,
           assigneeName: t.assigned_to_name || "",
           assigneeId: t.assigned_to || null,
-          dueDate: t.end_date ? String(t.end_date).slice(0, 10) : "",
+          dueDate: t.due_date ? String(t.due_date).slice(0, 10) : "",
         });
       });
 
