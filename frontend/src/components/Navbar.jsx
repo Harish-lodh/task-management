@@ -10,6 +10,7 @@ import {
   MenuItem,
   ListItemIcon,
   Divider,
+  Typography,
 } from "@mui/material";
 
 import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
