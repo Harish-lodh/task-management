@@ -47,46 +47,16 @@ const Sidebar = () => {
     },
 
     {
-      label: "Collections",
+      label: "Tickets",
       icon: PaymentsIcon,
       children: [
-        { label: "Collection List", path: "/collection/list" },
+        { label: "Tickets", path: "/ticket" },
         // { label: "Pending Approvals", path: "/payments/pending" },
       ],
     },
-    {
-      label: "Repossession",
-      icon: CameraAltIcon,
-      children: [
-        { label: "Repo Cases", path: "/repossession" },
-        // { label: "Photos", path: "/repossession/photos" },
-      ],
-    },
-    // {
-    //   label: "Users",
-    //   icon: PeopleIcon,
-    //   children: [
-    //     { label: "RM / Collectors", path: "/users/rm" },
-    //     { label: "Dealers", path: "/users/dealers" },
-    //   ],
-    // },
-        {
-      label: "Field Tracking",
-      icon: MapIcon,
-      children: [
-        { label: "RM / Collectors", path: "/users/rm" },
-         { label: "Dealers", path: "/users/dealers" },
-         {label:"track collectors",path:"/users/map"}
-      ],
-    },
-    {
-      label: "Reports",
-      icon: BarChartIcon,
-      children: [
-        { label: "Daily Summary", path: "/reports/daily" },
-        // { label: "Performance", path: "/reports/performance" },
-      ],
-    },
+
+
+
     // {
     //   label: "Settings",
     //   icon: SettingsIcon,

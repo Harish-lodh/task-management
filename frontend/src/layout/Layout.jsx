@@ -10,12 +10,10 @@ const Layout = ({ role }) => {
   const toggleSidebar = () => setIsSidebarOpen((v) => !v);
 
   return (
-    // On lg+, reserve space for the fixed sidebar with padding-left
-    <div className="flex flex-col min-h-screen lg:pl-[120px]">
+    <div className="flex flex-col min-h-screen lg:pl-[260px]"> {/* Fixed: match sidebar width */}
       <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
 
       <div className="flex flex-1">
-        {/* Mobile overlay (only visible when sidebar is open on <lg) */}
         {isSidebarOpen && (
           <div
             className="fixed inset-0 z-30 bg-black/40 lg:hidden"
@@ -24,27 +22,25 @@ const Layout = ({ role }) => {
           />
         )}
 
-        {/* Sidebar: off-canvas on mobile, fixed rail on lg+ */}
         <aside
           className={[
             "fixed z-40 top-16 bottom-0 left-0",
             "w-[260px] bg-white border-r border-gray-200",
             "transition-transform duration-300",
             isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-            "lg:translate-x-0" // always shown on large screens
+            "lg:translate-x-0"
           ].join(" ")}
           aria-hidden={!isSidebarOpen && typeof window !== "undefined" && window.innerWidth < 1024}
         >
           <Sidebar />
         </aside>
 
-        {/* Main content */}
         <main
           className={[
-            "flex-1  mt-6",        // prevent overflow and weird shrinking
-            "pt-6",                  // space below header
+            "flex-1 mt-6",
+            "pt-6",
             "transition-[padding] duration-300",
-            "px-4 mx-6 sm:px-4 sm:ml-16 lg:px-4 "   // content padding
+            "px-4 lg:px-6"  // Simplified padding
           ].join(" ")}
         >
           <Outlet />

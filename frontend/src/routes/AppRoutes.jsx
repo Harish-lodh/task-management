@@ -1,13 +1,9 @@
-import React from 'react';
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../pages/Login";
 import Layout from "../layout/Layout";
-import Dashboard from '../pages/Dashboard';
+import TicketBoardMUI from "../pages/TicketBoard";
 
-// Import other page components as needed, e.g.:
-// import Dashboard from "../pages/Dashboard";
-
-// Simple ProtectedRoute component (move to its own file if preferred)
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;
@@ -26,7 +22,9 @@ const AppRoutes = () => {
                 }
             >
                 <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="dashboard" element={<h1>dashbaord</h1>}/>
+                <Route path="ticket" element={<TicketBoardMUI />} />
+
      
             </Route>
         </Routes>

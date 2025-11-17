@@ -21,10 +21,10 @@ app.get("/", (req, res) => {
   res.send("Ticket Backend API is running");
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/tickets", ticketRoutes);
+app.use("/auth", authRoutes);
+app.use("/tickets", ticketRoutes);
 // ❌ remove: app.use("/api/projects", projectRoutes);
-app.use("/api/users", userRoutes); // 👈 add this line
+app.use("/users", userRoutes); // 👈 add this line
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);

@@ -1,3 +1,4 @@
+// routes/tickets.js
 import { Router } from "express";
 import pool from "../config/db.js";
 import { authRequired, requireRole } from "../middleware/auth.js";
@@ -10,9 +11,15 @@ function normalizeStatus(raw) {
   if (!raw) return "todo";
   const s = String(raw).toLowerCase().trim();
 
-  if (s === "todo" || s === "to do") return "todo";
-  if (s.includes("progress")) return "progress";
-  if (s === "complete" || s === "completed") return "completed";
+  if (s === "todo" || s === "to do" || s === "backlog") return "todo";
+  if (
+    s === "in-progress" ||
+    s === "in progress" ||
+    s === "doing" ||
+    s.includes("progress")
+  )
+    return "in-progress";
+  if (s === "complete" || s === "completed" || s === "done") return "complete";
 
   return "todo";
 }
@@ -52,7 +59,7 @@ router.get("/", authRequired, async (req, res) => {
  * Board view:
  * ADMIN -> all tickets
  * USER  -> only their tickets
- * Frontend groups by status (todo/progress/completed)
+ * Frontend groups by status (todo/in-progress/complete)
  ----------------------------------------------- */
 router.get("/board", authRequired, async (req, res) => {
   try {
@@ -81,23 +88,23 @@ router.get("/board", authRequired, async (req, res) => {
   }
 });
 
-/* ---------- POST /api/tickets ----------
+/* ---------- POST /api/tickets/create-ticket ----------
  * Create ticket
  * - ADMIN: can create for anyone
- * - USER : can create, by default assign_to themselves (if not provided)
+ * - USER : can create, but assigned_to forced to themselves
  ----------------------------------------- */
-router.post("/", authRequired, async (req, res) => {
+router.post("/create-ticket", authRequired, async (req, res) => {
   try {
     const {
       title,
       description,
       assigned_to,
-      start_date,
-      end_date,
+      due_date, // frontend sends this
       priority = "low",
       status: rawStatus,
     } = req.body;
 
+    // Validate
     if (!title || !title.trim()) {
       return res.status(400).json({ message: "Title is required" });
     }
@@ -105,16 +112,18 @@ router.post("/", authRequired, async (req, res) => {
     const created_by = req.user.id;
     const status = normalizeStatus(rawStatus);
 
-    // If a normal user tries to create for someone else, force to themselves
+    // If USER, force assign to self
     let assignedToFinal = assigned_to || null;
     if (req.user.role === "USER") {
       assignedToFinal = req.user.id;
     }
 
+    const finalDueDate = due_date || null; // maps to due_date in DB
+
     const [result] = await pool.query(
       `INSERT INTO tickets
-       (title, description, created_by, assigned_to, status, priority, start_date, end_date)
-       VALUES (?,?,?,?,?,?,?,?)`,
+       (title, description, created_by, assigned_to, status, priority, due_date)
+       VALUES (?,?,?,?,?,?,?)`,
       [
         title.trim(),
         description || null,
@@ -122,21 +131,22 @@ router.post("/", authRequired, async (req, res) => {
         assignedToFinal,
         status,
         priority,
-        start_date || null,
-        end_date || null,
+        finalDueDate,
       ]
     );
 
-    res.json({ id: result.insertId, message: "Ticket created" });
+    return res.json({
+      id: result.insertId,
+      message: "Ticket created",
+    });
   } catch (err) {
     console.error("Create ticket error:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
 /* ---------- PATCH /api/tickets/:id ----------
  * Update title / description / status / etc.
- * (Basic rule: allow anyone who is logged in; you can tighten later)
  --------------------------------------------- */
 router.patch("/:id", authRequired, async (req, res) => {
   try {
@@ -146,8 +156,7 @@ router.patch("/:id", authRequired, async (req, res) => {
       description,
       status,
       priority,
-      start_date,
-      end_date,
+      due_date,     // from frontend
       assigned_to,
     } = req.body;
 
@@ -162,8 +171,7 @@ router.patch("/:id", authRequired, async (req, res) => {
          description = COALESCE(?, description),
          status      = COALESCE(?, status),
          priority    = COALESCE(?, priority),
-         start_date  = COALESCE(?, start_date),
-         end_date    = COALESCE(?, end_date),
+         due_date    = COALESCE(?, due_date),
          assigned_to = COALESCE(?, assigned_to)
        WHERE id = ?`,
       [
@@ -171,8 +179,7 @@ router.patch("/:id", authRequired, async (req, res) => {
         description ?? null,
         status ?? null,
         priority ?? null,
-        start_date ?? null,
-        end_date ?? null,
+        due_date ?? null,     // maps into due_date
         assigned_to ?? null,
         id,
       ]
