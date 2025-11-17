@@ -4,7 +4,6 @@ import {
   List,
   ListItemIcon,
   ListItemText,
-  ListItemButton,
   Box,
   Typography,
 } from "@mui/material";
@@ -50,13 +49,33 @@ const Sidebar = ({ open }) => {
         <List>
           {menuItems.map((item) => (
             <ListItemButton
-              key={item.id}
-              selected={selectedMenu === item.id}
-              onClick={() => setSelectedMenu(item.id)}
-              className="rounded mb-1"
+              sx={{
+                borderRadius: "10px",
+                mb: 1,
+                justifyContent: sidebarCollapsed ? "center" : "flex-start",
+                "&:hover": {
+                  backgroundColor: darkMode
+                    ? "rgba(255,255,255,0.05)"
+                    : "rgba(0,0,0,0.05)",
+                },
+              }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
+              <ListItemIcon
+                sx={{
+                  minWidth: 40,
+                  color: "inherit",
+                  justifyContent: sidebarCollapsed ? "center" : "flex-start",
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
+
+              {!sidebarCollapsed && (
+                <ListItemText
+                  primary={item.label}
+                  primaryTypographyProps={{ fontSize: 15, fontWeight: 500 }}
+                />
+              )}
             </ListItemButton>
           ))}
         </List>
