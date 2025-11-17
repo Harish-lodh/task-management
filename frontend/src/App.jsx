@@ -1,25 +1,17 @@
-import React, { useState } from 'react';
-import { Box } from '@mui/material';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
-import Dashboard from './pages/Dashboard';
+import { useState } from 'react'
+import './App.css'
+import { BrowserRouter } from "react-router-dom";
+
+import AppRoutes from "./routes/AppRoutes";
+import { ToastContainer } from 'react-toastify';
 
 function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+
 
   return (
-    <Box className="flex min-h-screen bg-white">
-      <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-      <Sidebar open={sidebarOpen} />
-      <Box 
-        component="main" 
-        className="flex-grow transition-all duration-300"
-        sx={{ mt: 8, ml: sidebarOpen ? '240px' : 0 }}
-      >
-        <Dashboard />
-      </Box>
-    </Box>
-  );
+    <BrowserRouter>
+   <AppRoutes />  <ToastContainer position="top-right" autoClose={5000} /></BrowserRouter>
+  )
 }
 
-export default App;
+export default App
