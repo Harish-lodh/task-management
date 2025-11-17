@@ -29,7 +29,7 @@ const Navbar = ({ onMenuClick }) => {
             <Typography variant="body2" className="font-bold">C</Typography>
           </Box>
           <Typography variant="h6" className="font-semibold">
-            ClickUp Clone
+            Fintree ticket
           </Typography>
         </Box>
         <Avatar className="bg-purple-500 w-9 h-9">
