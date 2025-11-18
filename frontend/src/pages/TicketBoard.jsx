@@ -1,3 +1,4 @@
+// src/components/TicketBoardMUI.jsx
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -18,6 +19,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Popover,
 } from "@mui/material";
 import {
   PersonOutline,
@@ -28,64 +30,53 @@ import {
   Add,
 } from "@mui/icons-material";
 
-// 🔹 Import from api.js (adjust path if needed)
+// 🔹 Import from api.js
 import {
   getTicketsBoard,
   getUsers,
   createTicket,
   updateTicket,
 } from "../services/api";
-
-const initialColumns = [
-  {
-    id: "todo",
-    title: "TO DO",
-    countColor: "#1e293b",
-    headerBg: "#f8fafc",
-    accent: "#cbd5f5",
-    tasks: [],
-  },
-  {
-    id: "in-progress",
-    title: "IN PROGRESS",
-    countColor: "#2563eb",
-    headerBg: "#ffffff",
-    accent: "#0000ff",
-    tasks: [],
-  },
-  {
-    id: "complete",
-    title: "COMPLETE",
-    countColor: "#059669",
-    headerBg: "#ffffff",
-    accent: "#00cc00",
-    tasks: [],
-  },
-];
-
+import {initialColumns} from "../utils/index"
+import {PRIORITY_RANK} from "../utils/index"
 export default function TicketBoardMUI() {
   const [columns, setColumns] = useState(initialColumns);
   const [loadingTickets, setLoadingTickets] = useState(false);
 
-  // New ticket dialog state
+  // New ticket dialog
   const [openNewTicket, setOpenNewTicket] = useState(false);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+
+  const [ticketDetail, setTicketDetail] = useState(null);
+const [openTicketModal, setOpenTicketModal] = useState(false);
+
+
   const [newTicket, setNewTicket] = useState({
     title: "",
     assigneeId: "",
+    description:"",
     assigneeName: "",
     dueDate: "",
-    status: "todo", // which column
+    status: "todo", // todo | in-progress | completed
+    priority: "low", // low | medium | high | urgent
+    attachments: [],
   });
 
-  // Due date setter dialog state
+  // Due date dialog
   const [dueDateDialog, setDueDateDialog] = useState({
     open: false,
     columnId: "",
     taskId: null,
     value: "",
+  });
+
+  // Flag / priority menu
+  const [flagMenu, setFlagMenu] = useState({
+    anchorEl: null,
+    task: null,
+    columnId: "",
   });
 
   /* ========================
@@ -95,29 +86,14 @@ export default function TicketBoardMUI() {
     loadTickets();
   }, []);
 
-  const normalizeStatusClient = (raw) => {
-    if (!raw) return "todo";
-    const s = String(raw).toLowerCase().trim();
-
-    if (s === "todo" || s === "to do" || s === "backlog") return "todo";
-    if (s === "in-progress" || s === "in progress" || s.includes("progress"))
-      return "in-progress";
-    if (s === "complete" || s === "completed" || s === "done")
-      return "complete";
-
-    return "todo";
-  };
-
   const loadTickets = async () => {
     try {
       setLoadingTickets(true);
 
       const res = await getTicketsBoard();
       const data = res.data;
-
       const rows = Array.isArray(data) ? data : data.data || [];
 
-      // Base columns copy with empty tasks
       const base = {
         todo: {
           ...initialColumns.find((c) => c.id === "todo"),
@@ -127,14 +103,18 @@ export default function TicketBoardMUI() {
           ...initialColumns.find((c) => c.id === "in-progress"),
           tasks: [],
         },
-        complete: {
-          ...initialColumns.find((c) => c.id === "complete"),
+        completed: {
+          ...initialColumns.find((c) => c.id === "completed"),
           tasks: [],
         },
       };
 
       rows.forEach((t) => {
-        const colId = normalizeStatusClient(t.status);
+        let colId = t.status;
+        if (!["todo", "in-progress", "completed"].includes(colId)) {
+          colId = "todo";
+        }
+
         const col = base[colId];
         if (!col) return;
 
@@ -144,16 +124,30 @@ export default function TicketBoardMUI() {
           assigneeName: t.assigned_to_name || "",
           assigneeId: t.assigned_to || null,
           dueDate: t.due_date ? String(t.due_date).slice(0, 10) : "",
+          priority: t.priority || "low",
+          description: t.description || "",
+          attachments: t.attachments || [],
         });
       });
 
-      setColumns([base["todo"], base["in-progress"], base["complete"]]);
+      // Sort tasks by priority (except completed, which will be shown as-is)
+      ["todo", "in-progress"].forEach((colId) => {
+        base[colId].tasks.sort(
+          (a, b) => (PRIORITY_RANK[b.priority] || 1) - (PRIORITY_RANK[a.priority] || 1)
+        );
+      });
+
+      setColumns([base["todo"], base["in-progress"], base["completed"]]);
     } catch (err) {
       console.error("Failed to load tickets", err);
     } finally {
       setLoadingTickets(false);
     }
   };
+
+  /* ========================
+        NEW TICKET HANDLERS
+     ======================== */
 
   const handleOpenNewTicket = () => {
     setOpenNewTicket(true);
@@ -167,24 +161,23 @@ export default function TicketBoardMUI() {
     setNewTicket({
       title: "",
       assigneeId: "",
+      description:"",
       assigneeName: "",
       dueDate: "",
       status: "todo",
+      priority: "low",
+        attachments: [],
     });
   };
 
   const fetchUsersList = async () => {
     try {
       setLoadingUsers(true);
-
       const res = await getUsers();
-      console.log("USER API RESPONSE:", res.data);
-
       const data = res.data;
       const list = Array.isArray(data)
         ? data
         : data.data || data.users || [];
-
       setUsers(list);
     } catch (err) {
       console.error("Failed to fetch users", err);
@@ -210,24 +203,23 @@ export default function TicketBoardMUI() {
     }));
   };
 
-  /* ========================
-        CREATE TICKET (API)
-     ======================== */
   const handleCreateTicket = async () => {
     if (!newTicket.title.trim()) return;
 
     try {
-      const payload = {
-        title: newTicket.title,
-        description: "",
-        assigned_to: newTicket.assigneeId || null,
-        due_date: newTicket.dueDate || null,
-        status: newTicket.status, // "todo" | "in-progress" | "complete"
-      };
+const form = new FormData();
+form.append("title", newTicket.title);
+form.append("description", newTicket.description);
+form.append("assigned_to", newTicket.assigneeId || "");
+form.append("due_date", newTicket.dueDate || "");
+form.append("status", newTicket.status);
+form.append("priority", newTicket.priority);
 
-      const res = await createTicket(payload);
+newTicket.attachments.forEach((file) => {
+  form.append("attachments", file);
+});
 
-      console.log("TICKET CREATED:", res.data);
+const res = await createTicket(form);
 
       const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
       const columnId = newTicket.status;
@@ -235,23 +227,52 @@ export default function TicketBoardMUI() {
       const newTask = {
         id: ticketIdFromBackend,
         title: newTicket.title,
+        description:newTicket.description,
         assigneeName: newTicket.assigneeName,
         assigneeId: newTicket.assigneeId,
         dueDate: newTicket.dueDate,
+        priority: newTicket.priority || "low",
+        attachments: newTicket.attachments,
       };
 
-      const updatedColumns = columns.map((col) =>
-        col.id === columnId
-          ? { ...col, tasks: [newTask, ...col.tasks] }
-          : col
+      setColumns((prev) =>
+        prev.map((col) => {
+          if (col.id !== columnId) return col;
+
+          const updatedTasks = [newTask, ...col.tasks];
+
+          // Sort non-completed based on priority
+          if (columnId !== "completed") {
+            updatedTasks.sort(
+              (a, b) =>
+                (PRIORITY_RANK[b.priority] || 1) -
+                (PRIORITY_RANK[a.priority] || 1)
+            );
+          }
+
+          return { ...col, tasks: updatedTasks };
+        })
       );
 
-      setColumns(updatedColumns);
       handleCloseNewTicket();
     } catch (err) {
       console.error("Failed to create ticket:", err);
       alert("Failed to create ticket. Please try again.");
     }
+  };
+
+  /* ========================
+        TICKET MODAL HANDLERS
+     ======================== */
+
+  const handleOpenTicketModal = (task, status) => {
+    setTicketDetail({ ...task, status });
+    setOpenTicketModal(true);
+  };
+
+  const handleCloseTicketModal = () => {
+    setOpenTicketModal(false);
+    setTicketDetail(null);
   };
 
   /* ========================
@@ -292,7 +313,6 @@ export default function TicketBoardMUI() {
         due_date: dueDateDialog.value || null,
       });
 
-      // Update local board state
       setColumns((prevCols) =>
         prevCols.map((col) => {
           if (col.id !== dueDateDialog.columnId) return col;
@@ -315,6 +335,67 @@ export default function TicketBoardMUI() {
   };
 
   /* ========================
+        FLAG PRIORITY MENU
+     ======================== */
+
+  const openFlagMenu = (event, task, columnId) => {
+    setFlagMenu({
+      anchorEl: event.currentTarget,
+      task,
+      columnId,
+    });
+  };
+
+  const closeFlagMenu = () => {
+    setFlagMenu({
+      anchorEl: null,
+      task: null,
+      columnId: "",
+    });
+  };
+
+  const setTaskPriority = async (task, columnId, newPriority) => {
+    if (!task) return;
+
+    try {
+      await updateTicket(task.id, { priority: newPriority });
+
+      setColumns((prev) =>
+        prev.map((col) => {
+          if (col.id !== columnId) return col;
+
+          // Completed column: do not sort by priority, just update value
+          if (columnId === "completed") {
+            return {
+              ...col,
+              tasks: col.tasks.map((t) =>
+                t.id === task.id ? { ...t, priority: newPriority } : t
+              ),
+            };
+          }
+
+          // For todo / in-progress: update and then sort by priority rank
+          const updatedTasks = col.tasks.map((t) =>
+            t.id === task.id ? { ...t, priority: newPriority } : t
+          );
+
+          updatedTasks.sort(
+            (a, b) =>
+              (PRIORITY_RANK[b.priority] || 1) -
+              (PRIORITY_RANK[a.priority] || 1)
+          );
+
+          return { ...col, tasks: updatedTasks };
+        })
+      );
+    } catch (err) {
+      console.error("Failed to update priority (flag)", err);
+    } finally {
+      closeFlagMenu();
+    }
+  };
+
+  /* ========================
         DRAG & DROP
      ======================== */
 
@@ -328,7 +409,12 @@ export default function TicketBoardMUI() {
     e.preventDefault();
   };
 
-  const moveTaskBetweenColumns = (prevCols, fromColumnId, toColumnId, taskId) => {
+  const moveTaskBetweenColumns = (
+    prevCols,
+    fromColumnId,
+    toColumnId,
+    taskId
+  ) => {
     let movedTask = null;
 
     const colsAfterRemoval = prevCols.map((col) => {
@@ -348,7 +434,19 @@ export default function TicketBoardMUI() {
 
     return colsAfterRemoval.map((col) => {
       if (col.id !== toColumnId) return col;
-      return { ...col, tasks: [movedTask, ...col.tasks] };
+
+      const newTasks = [movedTask, ...col.tasks];
+
+      // Sort only if not completed
+      if (toColumnId !== "completed") {
+        newTasks.sort(
+          (a, b) =>
+            (PRIORITY_RANK[b.priority] || 1) -
+            (PRIORITY_RANK[a.priority] || 1)
+        );
+      }
+
+      return { ...col, tasks: newTasks };
     });
   };
 
@@ -374,10 +472,15 @@ export default function TicketBoardMUI() {
       moveTaskBetweenColumns(prevCols, fromColumnId, toColumnId, taskId)
     );
 
-    // Hit backend
+    // Status in DB is exactly column id
+    let newStatus = toColumnId;
+    if (!["todo", "in-progress", "completed"].includes(newStatus)) {
+      newStatus = "todo";
+    }
+
     try {
       await updateTicket(taskId, {
-        status: toColumnId,
+        status: newStatus,
       });
     } catch (err) {
       console.error("Failed to update ticket status:", err);
@@ -424,7 +527,12 @@ export default function TicketBoardMUI() {
       </Box>
 
       {/* Board */}
-      <Grid container spacing={2} wrap="nowrap" sx={{ overflowX: "auto", pb: 1 }}>
+      <Grid
+        container
+        spacing={2}
+        wrap="nowrap"
+        sx={{ overflowX: "auto", pb: 1 }}
+      >
         {columns.map((column) => (
           <Grid
             item
@@ -527,6 +635,8 @@ export default function TicketBoardMUI() {
                       <Typography
                         variant="body2"
                         sx={{ fontWeight: 500, mb: 0.5 }}
+                        onClick={() => handleOpenTicketModal(task, column.id)}
+                        style={{ cursor: 'pointer' }}
                       >
                         {task.title}
                       </Typography>
@@ -565,7 +675,7 @@ export default function TicketBoardMUI() {
                         )}
                       </Box>
 
-                      {/* Icons bar (flag + attachment + due date icon) */}
+                      {/* Icons bar (flag + attachment + due date) */}
                       <Box
                         display="flex"
                         alignItems="center"
@@ -578,7 +688,36 @@ export default function TicketBoardMUI() {
                           alignItems="center"
                           sx={{ color: "text.disabled" }}
                         >
-                          <FlagOutlined sx={{ fontSize: 16 }} />
+                          {/* Flag: disabled in completed column */}
+                          {column.id !== "completed" && (
+                            <IconButton
+                              size="small"
+                              onClick={(e) =>
+                                openFlagMenu(e, task, column.id)
+                              }
+                            >
+                              <FlagOutlined
+                                sx={{
+                                  fontSize: 16,
+                                  color:
+                                    task.priority === "urgent"
+                                      ? "darkred"
+                                      : task.priority === "high"
+                                      ? "red"
+                                      : task.priority === "medium"
+                                      ? "orange"
+                                      : "text.disabled",
+                                }}
+                              />
+                            </IconButton>
+                          )}
+
+                          {column.id === "completed" && (
+                            <FlagOutlined
+                              sx={{ fontSize: 16, color: "text.disabled" }}
+                            />
+                          )}
+
                           <AttachFile sx={{ fontSize: 16 }} />
 
                           {/* Due date icon to open dialog */}
@@ -595,23 +734,6 @@ export default function TicketBoardMUI() {
                     </Paper>
                   ))}
 
-                  {column.tasks.length === 0 && (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        mt: 1,
-                        borderStyle: "dashed",
-                        borderRadius: 1,
-                        p: 2,
-                        textAlign: "center",
-                        bgcolor: "#f9fafb",
-                      }}
-                    >
-                      <Typography variant="caption" color="text.secondary">
-                        No tasks here yet.
-                      </Typography>
-                    </Paper>
-                  )}
                 </Stack>
               </Box>
 
@@ -657,6 +779,37 @@ export default function TicketBoardMUI() {
               value={newTicket.title}
               onChange={handleNewTicketChange("title")}
             />
+                  <TextField
+              label="Description"
+              size="medium"
+              fullWidth
+              value={newTicket.description}
+              onChange={handleNewTicketChange("description")}
+            />
+            <Button
+  variant="outlined"
+  component="label"
+  size="small"
+  sx={{ textTransform: "none" }}
+>
+  Upload Attachments
+  <input
+    hidden
+    multiple
+    type="file"
+    onChange={(e) => {
+      const files = Array.from(e.target.files);
+      setNewTicket((prev) => ({ ...prev, attachments: files }));
+    }}
+  />
+</Button>
+
+{newTicket.attachments.length > 0 && (
+  <Typography variant="caption" color="text.secondary">
+    {newTicket.attachments.length} file(s) selected
+  </Typography>
+)}
+
 
             <FormControl size="small" fullWidth>
               <InputLabel id="assignee-label">
@@ -697,7 +850,22 @@ export default function TicketBoardMUI() {
               >
                 <MenuItem value="todo">TO DO</MenuItem>
                 <MenuItem value="in-progress">IN PROGRESS</MenuItem>
-                <MenuItem value="complete">COMPLETE</MenuItem>
+                <MenuItem value="completed">COMPLETED</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" fullWidth>
+              <InputLabel id="priority-label">Priority</InputLabel>
+              <Select
+                labelId="priority-label"
+                label="Priority"
+                value={newTicket.priority}
+                onChange={handleNewTicketChange("priority")}
+              >
+                <MenuItem value="low">Low</MenuItem>
+                <MenuItem value="medium">Medium</MenuItem>
+                <MenuItem value="high">High</MenuItem>
+                <MenuItem value="urgent">Urgent</MenuItem>
               </Select>
             </FormControl>
           </Stack>
@@ -707,6 +875,73 @@ export default function TicketBoardMUI() {
           <Button variant="contained" onClick={handleCreateTicket}>
             Create
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Ticket Details Modal */}
+      <Dialog
+        open={openTicketModal}
+        onClose={handleCloseTicketModal}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>{ticketDetail?.title}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            {ticketDetail?.description && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                  Description
+                </Typography>
+                <Typography variant="body2">{ticketDetail.description}</Typography>
+              </Box>
+            )}
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                Assignee
+              </Typography>
+              <Typography variant="body2">{ticketDetail?.assigneeName || "Unassigned"}</Typography>
+            </Box>
+            {ticketDetail?.dueDate && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                  Due Date
+                </Typography>
+                <Typography variant="body2">{ticketDetail.dueDate}</Typography>
+              </Box>
+            )}
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                Status
+              </Typography>
+              <Typography variant="body2">{ticketDetail?.status?.toUpperCase()}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                Priority
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {ticketDetail?.priority?.toUpperCase()}
+              </Typography>
+            </Box>
+            {ticketDetail?.attachments?.length > 0 && (
+              <Box>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                  Attachments ({ticketDetail.attachments.length})
+                </Typography>
+                <Stack spacing={1}>
+                  {ticketDetail.attachments.map((attachment, index) => (
+                    <Typography key={index} variant="body2" color="primary">
+                      {typeof attachment === 'object' ? attachment.name || `Attachment ${index + 1}` : attachment}
+                    </Typography>
+                  ))}
+                </Stack>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseTicketModal}>Close</Button>
         </DialogActions>
       </Dialog>
 
@@ -737,6 +972,49 @@ export default function TicketBoardMUI() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Flag / Priority Popover */}
+      <Popover
+        open={Boolean(flagMenu.anchorEl)}
+        anchorEl={flagMenu.anchorEl}
+        onClose={closeFlagMenu}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      >
+        <Stack sx={{ p: 1, minWidth: 140 }}>
+          <Button
+            onClick={() =>
+              setTaskPriority(flagMenu.task, flagMenu.columnId, "urgent")
+            }
+            sx={{ justifyContent: "flex-start", color: "darkred" }}
+          >
+            🚨 Urgent
+          </Button>
+          <Button
+            onClick={() =>
+              setTaskPriority(flagMenu.task, flagMenu.columnId, "high")
+            }
+            sx={{ justifyContent: "flex-start", color: "red" }}
+          >
+            🔥 High
+          </Button>
+          <Button
+            onClick={() =>
+              setTaskPriority(flagMenu.task, flagMenu.columnId, "medium")
+            }
+            sx={{ justifyContent: "flex-start", color: "orange" }}
+          >
+            ⭐ Medium
+          </Button>
+          <Button
+            onClick={() =>
+              setTaskPriority(flagMenu.task, flagMenu.columnId, "low")
+            }
+            sx={{ justifyContent: "flex-start", color: "gray" }}
+          >
+            ▪ Low
+          </Button>
+        </Stack>
+      </Popover>
     </div>
   );
 }

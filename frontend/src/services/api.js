@@ -8,7 +8,9 @@ export const getTicketsBoard = () => {
 };
 
 export const createTicket = (payload) => {
-  return apiClient.post("/tickets/create-ticket", payload);
+  return apiClient.post("/tickets/create-ticket", payload,{
+     headers: { "Content-Type": "multipart/form-data"} },
+  );
 };
 
 export const updateTicket = (id, payload) => {
@@ -19,6 +21,7 @@ export const updateTicket = (id, payload) => {
 export const getUsers = () => {
   return apiClient.get("/users");
 };
+
 
 export default {
   getTicketsBoard,
