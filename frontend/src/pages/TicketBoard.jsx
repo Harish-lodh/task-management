@@ -20,6 +20,7 @@ import {
   Select,
   MenuItem,
   Popover,
+  colors,
 } from "@mui/material";
 import {
   PersonOutline,
@@ -37,8 +38,8 @@ import {
   createTicket,
   updateTicket,
 } from "../services/api";
-import {initialColumns} from "../utils/index"
-import {PRIORITY_RANK} from "../utils/index"
+import { initialColumns } from "../utils/index";
+import { PRIORITY_RANK } from "../utils/index";
 export default function TicketBoardMUI() {
   const [columns, setColumns] = useState(initialColumns);
   const [loadingTickets, setLoadingTickets] = useState(false);
@@ -48,15 +49,13 @@ export default function TicketBoardMUI() {
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-
   const [ticketDetail, setTicketDetail] = useState(null);
-const [openTicketModal, setOpenTicketModal] = useState(false);
-
+  const [openTicketModal, setOpenTicketModal] = useState(false);
 
   const [newTicket, setNewTicket] = useState({
     title: "",
     assigneeId: "",
-    description:"",
+    description: "",
     assigneeName: "",
     dueDate: "",
     status: "todo", // todo | in-progress | completed
@@ -133,7 +132,8 @@ const [openTicketModal, setOpenTicketModal] = useState(false);
       // Sort tasks by priority (except completed, which will be shown as-is)
       ["todo", "in-progress"].forEach((colId) => {
         base[colId].tasks.sort(
-          (a, b) => (PRIORITY_RANK[b.priority] || 1) - (PRIORITY_RANK[a.priority] || 1)
+          (a, b) =>
+            (PRIORITY_RANK[b.priority] || 1) - (PRIORITY_RANK[a.priority] || 1)
         );
       });
 
@@ -161,12 +161,12 @@ const [openTicketModal, setOpenTicketModal] = useState(false);
     setNewTicket({
       title: "",
       assigneeId: "",
-      description:"",
+      description: "",
       assigneeName: "",
       dueDate: "",
       status: "todo",
       priority: "low",
-        attachments: [],
+      attachments: [],
     });
   };
 
@@ -175,9 +175,7 @@ const [openTicketModal, setOpenTicketModal] = useState(false);
       setLoadingUsers(true);
       const res = await getUsers();
       const data = res.data;
-      const list = Array.isArray(data)
-        ? data
-        : data.data || data.users || [];
+      const list = Array.isArray(data) ? data : data.data || data.users || [];
       setUsers(list);
     } catch (err) {
       console.error("Failed to fetch users", err);
@@ -207,19 +205,19 @@ const [openTicketModal, setOpenTicketModal] = useState(false);
     if (!newTicket.title.trim()) return;
 
     try {
-const form = new FormData();
-form.append("title", newTicket.title);
-form.append("description", newTicket.description);
-form.append("assigned_to", newTicket.assigneeId || "");
-form.append("due_date", newTicket.dueDate || "");
-form.append("status", newTicket.status);
-form.append("priority", newTicket.priority);
+      const form = new FormData();
+      form.append("title", newTicket.title);
+      form.append("description", newTicket.description);
+      form.append("assigned_to", newTicket.assigneeId || "");
+      form.append("due_date", newTicket.dueDate || "");
+      form.append("status", newTicket.status);
+      form.append("priority", newTicket.priority);
 
-newTicket.attachments.forEach((file) => {
-  form.append("attachments", file);
-});
+      newTicket.attachments.forEach((file) => {
+        form.append("attachments", file);
+      });
 
-const res = await createTicket(form);
+      const res = await createTicket(form);
 
       const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
       const columnId = newTicket.status;
@@ -227,7 +225,7 @@ const res = await createTicket(form);
       const newTask = {
         id: ticketIdFromBackend,
         title: newTicket.title,
-        description:newTicket.description,
+        description: newTicket.description,
         assigneeName: newTicket.assigneeName,
         assigneeId: newTicket.assigneeId,
         dueDate: newTicket.dueDate,
@@ -441,8 +439,7 @@ const res = await createTicket(form);
       if (toColumnId !== "completed") {
         newTasks.sort(
           (a, b) =>
-            (PRIORITY_RANK[b.priority] || 1) -
-            (PRIORITY_RANK[a.priority] || 1)
+            (PRIORITY_RANK[b.priority] || 1) - (PRIORITY_RANK[a.priority] || 1)
         );
       }
 
@@ -623,20 +620,20 @@ const res = await createTicket(form);
                       onDragStart={(e) =>
                         handleDragStart(e, column.id, task.id)
                       }
+                      onClick={() => handleOpenTicketModal(task, column.id)} // 🔹 whole card opens modal
                       sx={{
                         borderRadius: 1,
                         px: 1.5,
                         py: 1.25,
                         bgcolor: "white",
                         borderColor: "#e5e7eb",
-                        cursor: "grab",
+                        cursor: "pointer", // pointer instead of grab since it's clickable
                       }}
                     >
+                      {/* Title (no onClick needed now) */}
                       <Typography
                         variant="body2"
                         sx={{ fontWeight: 500, mb: 0.5 }}
-                        onClick={() => handleOpenTicketModal(task, column.id)}
-                        style={{ cursor: 'pointer' }}
                       >
                         {task.title}
                       </Typography>
@@ -692,9 +689,10 @@ const res = await createTicket(form);
                           {column.id !== "completed" && (
                             <IconButton
                               size="small"
-                              onClick={(e) =>
-                                openFlagMenu(e, task, column.id)
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation(); // 🔹 prevent opening modal when changing priority
+                                openFlagMenu(e, task, column.id);
+                              }}
                             >
                               <FlagOutlined
                                 sx={{
@@ -723,9 +721,10 @@ const res = await createTicket(form);
                           {/* Due date icon to open dialog */}
                           <IconButton
                             size="small"
-                            onClick={() =>
-                              handleOpenDueDateDialog(column.id, task)
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation(); // 🔹 don't open modal when setting due date
+                              handleOpenDueDateDialog(column.id, task);
+                            }}
                           >
                             <CalendarMonth sx={{ fontSize: 16 }} />
                           </IconButton>
@@ -733,7 +732,6 @@ const res = await createTicket(form);
                       </Box>
                     </Paper>
                   ))}
-
                 </Stack>
               </Box>
 
@@ -779,7 +777,7 @@ const res = await createTicket(form);
               value={newTicket.title}
               onChange={handleNewTicketChange("title")}
             />
-                  <TextField
+            <TextField
               label="Description"
               size="medium"
               fullWidth
@@ -787,29 +785,37 @@ const res = await createTicket(form);
               onChange={handleNewTicketChange("description")}
             />
             <Button
-  variant="outlined"
-  component="label"
-  size="small"
-  sx={{ textTransform: "none" }}
->
-  Upload Attachments
-  <input
-    hidden
-    multiple
-    type="file"
-    onChange={(e) => {
-      const files = Array.from(e.target.files);
-      setNewTicket((prev) => ({ ...prev, attachments: files }));
-    }}
-  />
-</Button>
+              variant="outlined"
+              component="label"
+              size="small"
+              sx={{
+                textTransform: "none",
+                color: "black",
+                borderColor: "#A9A9A9", // <-- yeh sahi hai
+                bgcolor: "transparent",
+                "&:hover": {
+                  borderColor: "black", // hover me bhi black hi rahe
+                  bgcolor: "transparent", // no background on hover
+                },
+              }}
+            >
+              Upload Attachments
+              <input
+                hidden
+                multiple
+                type="file"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files);
+                  setNewTicket((prev) => ({ ...prev, attachments: files }));
+                }}
+              />
+            </Button>
 
-{newTicket.attachments.length > 0 && (
-  <Typography variant="caption" color="text.secondary">
-    {newTicket.attachments.length} file(s) selected
-  </Typography>
-)}
-
+            {newTicket.attachments.length > 0 && (
+              <Typography variant="caption" color="text.secondary">
+                {newTicket.attachments.length} file(s) selected
+              </Typography>
+            )}
 
             <FormControl size="small" fullWidth>
               <InputLabel id="assignee-label">
@@ -893,14 +899,18 @@ const res = await createTicket(form);
                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                   Description
                 </Typography>
-                <Typography variant="body2">{ticketDetail.description}</Typography>
+                <Typography variant="body2">
+                  {ticketDetail.description}
+                </Typography>
               </Box>
             )}
             <Box>
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                 Assignee
               </Typography>
-              <Typography variant="body2">{ticketDetail?.assigneeName || "Unassigned"}</Typography>
+              <Typography variant="body2">
+                {ticketDetail?.assigneeName || "Unassigned"}
+              </Typography>
             </Box>
             {ticketDetail?.dueDate && (
               <Box>
@@ -914,7 +924,9 @@ const res = await createTicket(form);
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                 Status
               </Typography>
-              <Typography variant="body2">{ticketDetail?.status?.toUpperCase()}</Typography>
+              <Typography variant="body2">
+                {ticketDetail?.status?.toUpperCase()}
+              </Typography>
             </Box>
             <Box>
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -932,7 +944,9 @@ const res = await createTicket(form);
                 <Stack spacing={1}>
                   {ticketDetail.attachments.map((attachment, index) => (
                     <Typography key={index} variant="body2" color="primary">
-                      {typeof attachment === 'object' ? attachment.name || `Attachment ${index + 1}` : attachment}
+                      {typeof attachment === "object"
+                        ? attachment.name || `Attachment ${index + 1}`
+                        : attachment}
                     </Typography>
                   ))}
                 </Stack>
