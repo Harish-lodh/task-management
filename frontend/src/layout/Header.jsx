@@ -17,8 +17,9 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const name = localStorage.getItem("username");
-      setDisplayName(name || "user");
+      const userString = localStorage.getItem("user");
+      const user=JSON.parse(userString)
+      setDisplayName(user?.name || "user");
     } catch {
       setDisplayName("");
     }
