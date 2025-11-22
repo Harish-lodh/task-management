@@ -22,10 +22,19 @@ export const getUsers = () => {
   return apiClient.get("/users");
 };
 
+export const getTicketCategories = () =>
+  apiClient.get("/ticket-masters/categories");
+
+export const getTicketSubcategories = (categoryId) =>
+  apiClient.get("/ticket-masters/subcategories", {
+    params: { category_id: categoryId },
+  });
 
 export default {
   getTicketsBoard,
   createTicket,
   updateTicket,
   getUsers,
+  getTicketCategories,
+  getTicketSubcategories
 };

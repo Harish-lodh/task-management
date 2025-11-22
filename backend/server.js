@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
+import ticketMastersRouter from "./routes/ticketMasters.js";
 
 import authRoutes from "./routes/auth.js";
 import ticketRoutes from "./routes/tickets.js";
@@ -25,7 +26,7 @@ app.use("/auth", authRoutes);
 app.use("/tickets", ticketRoutes);
 // ❌ remove: app.use("/api/projects", projectRoutes);
 app.use("/users", userRoutes); // 👈 add this line
-
+app.use("/ticket-masters", ticketMastersRouter);
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
