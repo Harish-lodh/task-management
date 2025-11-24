@@ -1,36 +1,38 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import MapIcon from "@mui/icons-material/Map";
 import PaymentsIcon from "@mui/icons-material/Payments";
-import CameraAltIcon from "@mui/icons-material/CameraAlt";
-import PeopleIcon from "@mui/icons-material/People";
-import BarChartIcon from "@mui/icons-material/BarChart";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LogoutIcon from "@mui/icons-material/Logout";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-// import { jwtDecode } from "jwt-decode";
 
 const Sidebar = () => {
   const navigate = useNavigate();
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [userRole, setUserRole] = useState(null); // 'admin' | 'user' | 'superadmin'
   const [openSection, setOpenSection] = useState(null); // track open parent
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    // ✅ Read user from localStorage
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) return;
+
     try {
-      // const decoded = jwtDecode(token);
-      // setIsSuperAdmin(decoded.role?.toLowerCase() === "superadmin");
-      setIsSuperAdmin(true); // temporary for dev
-    } catch {
-      setIsSuperAdmin(false);
+      const parsed = JSON.parse(storedUser);
+      const role = (parsed.role || "").toLowerCase();
+      setUserRole(role);
+    } catch (err) {
+      console.error("Failed to parse user from localStorage", err);
     }
   }, []);
 
+  const isAdmin =
+    userRole === "admin" ||
+    userRole === "superadmin"; // adjust according to your roles
+
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     sessionStorage.clear();
     navigate("/login");
   };
@@ -39,30 +41,35 @@ const Sidebar = () => {
     setOpenSection(openSection === label ? null : label);
   };
 
+  // 👇 dynamic ticket path based on role
+  const ticketPath = isAdmin ? "/tickets" : "/user/tickets";
+
+  // 👇 build menu based on role
   const menuSections = [
-    {
+     {
       label: "Dashboard",
       icon: DashboardIcon,
-      path: "/dashboard",
+      // you can also have separate dashboards if you want
+      path: isAdmin ? "/dashboard" : "/user-dashboard",
     },
-
     {
       label: "Tickets",
       icon: PaymentsIcon,
       children: [
-        { label: "Tickets", path: "/ticket" },
-        // { label: "Pending Approvals", path: "/payments/pending" },
+        {
+          label: isAdmin ? "All Tickets" : "My Tickets",
+          path: ticketPath,
+        },
       ],
     },
-
-
-
+    // You can keep settings only for admin if you want
+    // isAdmin &&
     // {
     //   label: "Settings",
     //   icon: SettingsIcon,
     //   path: "/settings",
     // },
-  ];
+  ].filter(Boolean); // remove falsy (e.g. settings when not admin)
 
   return (
     <aside className="flex flex-col h-full bg-white border-r border-gray-200">
@@ -79,9 +86,11 @@ const Sidebar = () => {
                 to={section.path}
                 className={({ isActive }) =>
                   `flex items-center gap-2 w-full p-2 rounded-lg transition-all 
-                   ${isActive
-                     ? "text-blue-800 font-semibold bg-blue-50"
-                     : "text-gray-700 hover:text-blue-700 hover:bg-blue-50"}`
+                   ${
+                     isActive
+                       ? "text-blue-800 font-semibold bg-blue-50"
+                       : "text-gray-700 hover:text-blue-700 hover:bg-blue-50"
+                   }`
                 }
               >
                 <Icon fontSize="small" />
@@ -138,8 +147,6 @@ const Sidebar = () => {
             </div>
           );
         })}
-
-
 
         <hr className="my-4 border-gray-200" />
 

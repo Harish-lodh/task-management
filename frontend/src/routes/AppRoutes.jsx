@@ -25,7 +25,7 @@ const AppRoutes = () => {
             >
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/admin/tickets" element={<TicketBoardMUI />} />
+                <Route path="/tickets" element={<TicketBoardMUI />} />
                 <Route path="/user/tickets" element={<UserTicketBoard />} />
 
             </Route>
