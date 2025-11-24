@@ -162,9 +162,93 @@ router.get("/", authRequired, async (req, res) => {
 // });
 
 // GET /tickets/board
+// router.get("/board", authRequired, async (req, res) => {
+//   try {
+//     const { assigneeId } = req.query; // NEW
+
+//     let sql = `
+//       SELECT 
+//         t.id,
+//         t.title,
+//         t.description,
+//         t.status,
+//         t.priority,
+//         t.due_date,
+//         t.assigned_to,
+//         t.created_by,
+//         t.category_id,
+//         t.subcategory_id,
+//         tc.name AS category_name,
+//         ts.name AS subcategory_name,
+//         u1.name AS created_by_name,
+//         u2.name AS assigned_to_name,
+//         JSON_ARRAYAGG(
+//           JSON_OBJECT(
+//             'id', ta.id,
+//             'file_name', ta.file_name,
+//             'mime_type', ta.mime_type,
+//             'size', ta.size
+//           )
+//         ) AS attachments
+//       FROM tickets t
+//       LEFT JOIN users u1 ON t.created_by = u1.id
+//       LEFT JOIN users u2 ON t.assigned_to = u2.id
+//       LEFT JOIN ticket_attachments ta ON ta.ticket_id = t.id
+//       LEFT JOIN ticket_categories tc ON tc.id = t.category_id
+//       LEFT JOIN ticket_subcategories ts ON ts.id = t.subcategory_id
+//     `;
+
+//     const params = [];
+//     const where = [];
+
+//     // If normal USER => always see own tickets only (keep old behavior)
+//     if (req.user.role === "USER") {
+//       where.push("t.assigned_to = ?");
+//       params.push(req.user.id);
+//     } else if (assigneeId) {
+//       // For ADMIN / MANAGER allow filter by assignee
+//       where.push("t.assigned_to = ?");
+//       params.push(assigneeId);
+//     }
+
+//     if (where.length) {
+//       sql += " WHERE " + where.join(" AND ");
+//     }
+
+//     sql += `
+//       GROUP BY t.id
+//       ORDER BY t.created_at DESC
+//     `;
+
+//     const [rows] = await pool.query(sql, params);
+
+//     const cleanRows = rows.map((t) => {
+//       let files = [];
+
+//       if (t.attachments) {
+//         try {
+//           files = JSON.parse(t.attachments);
+//           if (!Array.isArray(files)) files = [];
+//         } catch {
+//           files = [];
+//         }
+//       }
+
+//       return {
+//         ...t,
+//         attachments: files.filter((x) => x !== null),
+//       };
+//     });
+
+//     res.json(cleanRows);
+//   } catch (err) {
+//     console.error("Board error:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
 router.get("/board", authRequired, async (req, res) => {
   try {
-    const { assigneeId } = req.query; // NEW
+    const { assigneeId } = req.query;
 
     let sql = `
       SELECT 
@@ -196,39 +280,38 @@ router.get("/board", authRequired, async (req, res) => {
       LEFT JOIN ticket_attachments ta ON ta.ticket_id = t.id
       LEFT JOIN ticket_categories tc ON tc.id = t.category_id
       LEFT JOIN ticket_subcategories ts ON ts.id = t.subcategory_id
+      WHERE 1 = 1
     `;
 
     const params = [];
-    const where = [];
 
-    // If normal USER => always see own tickets only (keep old behavior)
+    /* ==========================
+         ROLE BASED RULES
+       ========================== */
+
     if (req.user.role === "USER") {
-      where.push("t.assigned_to = ?");
+      // Normal user → only own tickets
+      sql += ` AND t.assigned_to = ? `;
       params.push(req.user.id);
-    } else if (assigneeId) {
-      // For ADMIN / MANAGER allow filter by assignee
-      where.push("t.assigned_to = ?");
-      params.push(assigneeId);
     }
 
-    if (where.length) {
-      sql += " WHERE " + where.join(" AND ");
-    }
-
-    sql += `
+    if (req.user.role === "ADMIN") {
+      // Admin → full access
+      sql += `
       GROUP BY t.id
       ORDER BY t.created_at DESC
     `;
+    }
+
+
 
     const [rows] = await pool.query(sql, params);
 
     const cleanRows = rows.map((t) => {
       let files = [];
-
       if (t.attachments) {
         try {
           files = JSON.parse(t.attachments);
-          if (!Array.isArray(files)) files = [];
         } catch {
           files = [];
         }
@@ -246,6 +329,7 @@ router.get("/board", authRequired, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 /* ======================
       CREATE TICKET
@@ -411,7 +495,7 @@ router.post(
     } catch (err) {
       try {
         await conn.rollback();
-      } catch (_) {}
+      } catch (_) { }
       conn.release();
       console.error("Create ticket error:", err);
       res.status(500).json({ message: "Server error" });

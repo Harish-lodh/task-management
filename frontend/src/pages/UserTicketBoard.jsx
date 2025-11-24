@@ -125,7 +125,6 @@ export default function UserTicketBoard() {
       if (assigneeId) {
         params.assigneeId = assigneeId;
       }
-
       const res = await getTicketsBoard(params);
       const data = res.data;
       const rows = Array.isArray(data) ? data : data.data || [];
