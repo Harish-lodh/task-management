@@ -16,8 +16,12 @@ export default function Login() {
       // Save token
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-
-      navigate("/ticket");
+      if(data.user.role==="admin"){
+        navigate("/admin/tickets");
+      }else{
+       navigate("/user/tickets");
+      }
+     
     } catch (err) {
       alert("Invalid credentials");
     }

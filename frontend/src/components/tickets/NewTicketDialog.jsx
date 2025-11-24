@@ -37,7 +37,7 @@ export default function NewTicketDialog({
       <DialogContent sx={{ pt: 1, pb: 0 }}>
         <Stack spacing={2} mt={1}>
           <TextField
-            label="Title"
+            label="Incident"
             size="small"
             fullWidth
             value={newTicket.title}

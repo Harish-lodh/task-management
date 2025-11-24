@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../pages/Login";
 import Layout from "../layout/Layout";
 import TicketBoardMUI from "../pages/TicketBoard";
+import UserTicketBoard  from "../pages/UserTicketBoard"
 import Dashboard from "../pages/Dashboard";
 
 const ProtectedRoute = ({ children }) => {
@@ -24,8 +25,8 @@ const AppRoutes = () => {
             >
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="ticket" element={<TicketBoardMUI />} />
-
+                <Route path="/admin/tickets" element={<TicketBoardMUI />} />
+                <Route path="/user/tickets" element={<UserTicketBoard />} />
 
             </Route>
         </Routes>
