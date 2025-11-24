@@ -1,6 +1,15 @@
 // src/pages/TicketBoard.jsx
 import { useState, useEffect } from "react";
-import { Box, Grid, Typography, Button } from "@mui/material";
+import {
+  Box,
+  Grid,
+  Typography,
+  Button,
+  Drawer,
+  IconButton,
+} from "@mui/material";
+import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import CloseIcon from "@mui/icons-material/Close";
 import { Add } from "@mui/icons-material";
 
 import {
@@ -18,6 +27,8 @@ import NewTicketDialog from "../components/tickets/NewTicketDialog";
 import TicketDetailsDialog from "../components/tickets/TicketDetailsDialog";
 import DueDateDialog from "../components/tickets/DueDateDialog";
 import PriorityPopover from "../components/tickets/PriorityPopover";
+
+import Select from "react-select";
 
 export default function TicketBoard() {
   const [columns, setColumns] = useState(initialColumns);
@@ -50,6 +61,12 @@ export default function TicketBoard() {
     subcategoryId: "",
   });
 
+  // Assignee filter (single user)
+  const [selectedAssignee, setSelectedAssignee] = useState(null);
+
+  // Assignee side panel
+  const [openAssigneePanel, setOpenAssigneePanel] = useState(false);
+
   // Due date dialog
   const [dueDateDialog, setDueDateDialog] = useState({
     open: false,
@@ -69,15 +86,21 @@ export default function TicketBoard() {
         LOAD TICKETS & MASTERS
      ======================== */
   useEffect(() => {
-    loadTickets();
+    loadTickets();      // default: all data
     loadCategories();
+    fetchUsersList();   // for assignee filter + dialog
   }, []);
 
-  const loadTickets = async () => {
+  const loadTickets = async (assigneeId = null) => {
     try {
       setLoadingTickets(true);
 
-      const res = await getTicketsBoard();
+      const params = {};
+      if (assigneeId) {
+        params.assigneeId = assigneeId;
+      }
+
+      const res = await getTicketsBoard(params);
       const data = res.data;
       const rows = Array.isArray(data) ? data : data.data || [];
 
@@ -534,6 +557,25 @@ export default function TicketBoard() {
   };
 
   /* ========================
+        Assignee options & handler
+     ======================== */
+
+  const assigneeOptions = users.map((u) => ({
+    value: u.id,
+    label: u.name || u.fullName || u.email,
+  }));
+
+  const handleAssigneeFilterChange = async (option) => {
+    setSelectedAssignee(option);
+    if (!option) {
+      // clear filter => load all tickets
+      await loadTickets();
+    } else {
+      await loadTickets(option.value);
+    }
+  };
+
+  /* ========================
             RENDER
      ======================== */
 
@@ -558,22 +600,41 @@ export default function TicketBoard() {
           )}
         </Box>
 
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<Add />}
-          onClick={handleOpenNewTicket}
-          sx={{
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: 500,
-            backgroundColor: "white",
-            boxShadow: 1,
-            "&:hover": { backgroundColor: "#f9fafb" },
-          }}
-        >
-          New Ticket
-        </Button>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PeopleAltIcon />}
+            onClick={() => setOpenAssigneePanel(true)}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 500,
+              backgroundColor: "white",
+              boxShadow: 1,
+              "&:hover": { backgroundColor: "#f9fafb" },
+            }}
+          >
+            Assignees
+          </Button>
+
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Add />}
+            onClick={handleOpenNewTicket}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 500,
+              backgroundColor: "white",
+              boxShadow: 1,
+              "&:hover": { backgroundColor: "#f9fafb" },
+            }}
+          >
+            New Ticket
+          </Button>
+        </Box>
       </Box>
 
       {/* Board */}
@@ -641,6 +702,70 @@ export default function TicketBoard() {
         onClose={closeFlagMenu}
         onSelectPriority={setTaskPriority}
       />
+
+      {/* Assignee Side Panel (Drawer) */}
+      <Drawer
+        anchor="right"
+        open={openAssigneePanel}
+        onClose={() => setOpenAssigneePanel(false)}
+      >
+        <Box
+          sx={{
+            width: 320,
+            p: 2,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          {/* Header */}
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+          >
+            <Typography variant="subtitle1" fontWeight={600}>
+              Assignees
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={() => setOpenAssigneePanel(false)}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          {/* Search / Select */}
+          <Select
+            isClearable
+            options={assigneeOptions}
+            value={selectedAssignee}
+            onChange={handleAssigneeFilterChange}
+            placeholder={
+              loadingUsers ? "Loading users..." : "Search by user or team"
+            }
+            styles={{
+              control: (base) => ({
+                ...base,
+                minHeight: 38,
+                borderRadius: 8,
+                borderColor: "#805ad5",
+                boxShadow: "none",
+                "&:hover": { borderColor: "#805ad5" },
+              }),
+            }}
+          />
+
+          {/* Info text */}
+          {!selectedAssignee && (
+            <Typography variant="body2" color="text.secondary">
+              No tasks have been assigned yet. Set assignees on tasks to get
+              started.
+            </Typography>
+          )}
+        </Box>
+      </Drawer>
     </div>
   );
 }

@@ -6,6 +6,8 @@ import ticketMastersRouter from "./routes/ticketMasters.js";
 
 import authRoutes from "./routes/auth.js";
 import ticketRoutes from "./routes/tickets.js";
+import dashboardRoutes from "./routes/dashboard.js";
+
 // ❌ remove: import projectRoutes from "./routes/projects.js";
 import userRoutes from "./routes/users.js"; // 👈 add this
 
@@ -24,6 +26,8 @@ app.get("/", (req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/tickets", ticketRoutes);
+app.use("/dashboard", dashboardRoutes);
+
 // ❌ remove: app.use("/api/projects", projectRoutes);
 app.use("/users", userRoutes); // 👈 add this line
 app.use("/ticket-masters", ticketMastersRouter);

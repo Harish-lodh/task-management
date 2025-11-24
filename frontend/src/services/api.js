@@ -3,9 +3,8 @@ import axios from "axios";
 import apiClient from "../services/apiClient";
 
 // 🔹 Tickets
-export const getTicketsBoard = () => {
-  return apiClient.get("/tickets/board");
-};
+export const getTicketsBoard = (params = {}) =>
+  apiClient.get("/tickets/board", { params });
 
 export const createTicket = (payload) => {
   return apiClient.post("/tickets/create-ticket", payload,{
@@ -30,11 +29,17 @@ export const getTicketSubcategories = (categoryId) =>
     params: { category_id: categoryId },
   });
 
+  // Dashboard API
+export const getTicketDashboard = (params = {}) =>
+  apiClient.get("/dashboard", { params });
+
+
 export default {
   getTicketsBoard,
   createTicket,
   updateTicket,
   getUsers,
   getTicketCategories,
-  getTicketSubcategories
+  getTicketSubcategories,
+  getTicketDashboard
 };
