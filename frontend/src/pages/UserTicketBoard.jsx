@@ -9,6 +9,7 @@ import {
   updateTicket,
   getTicketCategories,
   getTicketSubcategories,
+  getUsers,              // 👈 import this
 } from "../services/api";
 import { initialColumns, PRIORITY_RANK } from "../utils/index";
 
@@ -42,10 +43,9 @@ export default function UserTicketBoard() {
   // New ticket dialog
   const [openNewTicket, setOpenNewTicket] = useState(false);
 
-  // For compatibility with NewTicketDialog: provide single user = currentUser
-  const [users] = useState(() =>
-    currentUser ? [currentUser] : []
-  );
+  // 🔹 full users list (not just current user)
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Category masters
   const [categories, setCategories] = useState([]);
@@ -58,7 +58,7 @@ export default function UserTicketBoard() {
 
   const [newTicket, setNewTicket] = useState(() => ({
     title: "",
-    assigneeId: currentUser?.id || "",
+    assigneeId: currentUser?.id || "", // default self
     description: "",
     assigneeName:
       currentUser?.name ||
@@ -96,12 +96,26 @@ export default function UserTicketBoard() {
     if (currentUser?.id) {
       loadTickets(currentUser.id);
     } else {
-      // fallback: load all (should be restricted by backend anyway)
       loadTickets();
     }
 
     loadCategories();
+    fetchUsersList();       // 👈 load all users for assignee dropdown
   }, [currentUser?.id]);
+
+  const fetchUsersList = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await getUsers();
+      const data = res.data;
+      const list = Array.isArray(data) ? data : data.data || data.users || [];
+      setUsers(list);
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const loadTickets = async (assigneeId = null) => {
     try {
@@ -208,7 +222,7 @@ export default function UserTicketBoard() {
   const handleOpenNewTicket = () => {
     setOpenNewTicket(true);
 
-    // Ensure ticket is assigned to the current user
+    // default self as assignee
     if (currentUser) {
       setNewTicket((prev) => ({
         ...prev,
@@ -220,6 +234,9 @@ export default function UserTicketBoard() {
 
     if (categories.length === 0) {
       loadCategories();
+    }
+    if (users.length === 0) {
+      fetchUsersList();
     }
   };
 
@@ -251,7 +268,6 @@ export default function UserTicketBoard() {
     }));
   };
 
-  // Still keep for compatibility with NewTicketDialog, but options = only currentUser
   const handleAssigneeChange = (event) => {
     const assigneeId = event.target.value;
     const user = users.find((u) => String(u.id) === String(assigneeId));
@@ -295,11 +311,9 @@ export default function UserTicketBoard() {
       form.append("title", newTicket.title);
       form.append("description", newTicket.description);
 
-      // Force assign to current user
-      form.append(
-        "assigned_to",
-        currentUser?.id || newTicket.assigneeId || ""
-      );
+      // 👇 use selected assignee, fallback to current user
+      const finalAssigneeId = newTicket.assigneeId || currentUser?.id || "";
+      form.append("assigned_to", finalAssigneeId);
 
       form.append("due_date", newTicket.dueDate || "");
       form.append("status", newTicket.status);
@@ -316,16 +330,21 @@ export default function UserTicketBoard() {
       const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
       const columnId = newTicket.status;
 
+      // pick name from users list if exists
+      const assigneeUser =
+        users.find((u) => String(u.id) === String(finalAssigneeId)) ||
+        currentUser;
+
       const newTask = {
         id: ticketIdFromBackend,
         title: newTicket.title,
         description: newTicket.description,
         assigneeName:
-          currentUser?.name ||
-          currentUser?.fullName ||
-          currentUser?.email ||
+          assigneeUser?.name ||
+          assigneeUser?.fullName ||
+          assigneeUser?.email ||
           newTicket.assigneeName,
-        assigneeId: currentUser?.id || newTicket.assigneeId,
+        assigneeId: finalAssigneeId,
         dueDate: newTicket.dueDate,
         priority: newTicket.priority || "low",
         attachments: newTicket.attachments,
@@ -649,10 +668,10 @@ export default function UserTicketBoard() {
         open={openNewTicket}
         onClose={handleCloseNewTicket}
         newTicket={newTicket}
-        users={users} // only current user
+        users={users} // 👈 now full list, default selected = current user
         categories={categories}
         subcategories={subcategories}
-        loadingUsers={false}
+        loadingUsers={loadingUsers}
         loadingCategories={loadingCategories}
         loadingSubcategories={loadingSubcategories}
         onFieldChange={handleNewTicketChange}
