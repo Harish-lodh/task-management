@@ -40,6 +40,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     sessionStorage.clear();
     navigate("/login");
   };

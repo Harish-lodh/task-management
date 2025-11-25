@@ -16,8 +16,8 @@ export default function Login() {
       // Save token
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      if(data.user.role==="admin"){
-        navigate("/admin/tickets");
+      if (data.user.role.toLowerCase() === "admin") {
+        navigate("/tickets");
       }else{
        navigate("/user/tickets");
       }

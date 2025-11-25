@@ -2,9 +2,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../pages/Login";
 import Layout from "../layout/Layout";
-import TicketBoardMUI from "../pages/TicketBoard";
-import UserTicketBoard  from "../pages/UserTicketBoard"
-import Dashboard from "../pages/Dashboard";
+import TicketBoardMUI from "../pages/admin/TicketBoard";
+import MyticketsForAdmin from "../pages/admin/Mytickets";
+
+import AssignTicketBoard  from "../pages/user/AssignTicketBoard"
+import Mytickets from "../pages/user/Mytickets"
+import Dashboard from "../pages/admin/Dashboard";
 
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem("token");
@@ -26,7 +29,12 @@ const AppRoutes = () => {
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/tickets" element={<TicketBoardMUI />} />
-                <Route path="/user/tickets" element={<UserTicketBoard />} />
+                    <Route path="/my-tickets" element={<MyticketsForAdmin />} />
+
+                {/* user only */}
+                <Route path="/user/tickets" element={< AssignTicketBoard/>} />
+                <Route path="/user/my-tickets" element={< Mytickets/>} />
+
 
             </Route>
         </Routes>

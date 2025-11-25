@@ -43,7 +43,7 @@ const Sidebar = () => {
 
   // 👇 dynamic ticket path based on role
   const ticketPath = isAdmin ? "/tickets" : "/user/tickets";
-
+  const myTicketPath=isAdmin ? "/my-tickets":"/user/my-tickets"
   // 👇 build menu based on role
   const menuSections = [
      {
@@ -57,8 +57,12 @@ const Sidebar = () => {
       icon: PaymentsIcon,
       children: [
         {
-          label: isAdmin ? "All Tickets" : "My Tickets",
+          label: isAdmin ? "All Tickets" : "Assign Tickets",
           path: ticketPath,
+        },
+           {
+          label: "My Ticket",
+          path: myTicketPath,
         },
       ],
     },

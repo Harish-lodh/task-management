@@ -161,7 +161,7 @@ export default function NewTicketDialog({
             onChange={onFieldChange("dueDate")}
           />
 
-          <FormControl size="small" fullWidth>
+          {/* <FormControl size="small" fullWidth>
             <InputLabel id="status-label">Status</InputLabel>
             <Select
               labelId="status-label"
@@ -173,7 +173,7 @@ export default function NewTicketDialog({
               <MenuItem value="in-progress">IN PROGRESS</MenuItem>
               <MenuItem value="completed">COMPLETED</MenuItem>
             </Select>
-          </FormControl>
+          </FormControl> */}
 
           <FormControl size="small" fullWidth>
             <InputLabel id="priority-label">Priority</InputLabel>

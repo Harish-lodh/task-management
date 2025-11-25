@@ -23,8 +23,7 @@ import {
   RefreshRounded as RefreshIcon,
 } from "@mui/icons-material";
 
-import { getTicketsBoard } from "../services/api";
-
+import { getTicketsBoard } from "../../services/api";
 export default function TicketDashboard() {
   const [loading, setLoading] = useState(false);
   const [tickets, setTickets] = useState([]);

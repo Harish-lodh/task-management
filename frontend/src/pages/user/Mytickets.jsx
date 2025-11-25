@@ -1,41 +1,49 @@
-// src/pages/TicketBoard.jsx
+// src/pages/UserTicketBoard.jsx
 import { useState, useEffect } from "react";
-import {
-  Box,
-  Grid,
-  Typography,
-  Button,
-  Drawer,
-  IconButton,
-} from "@mui/material";
-import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import CloseIcon from "@mui/icons-material/Close";
+import { Box, Grid, Typography, Button } from "@mui/material";
 import { Add } from "@mui/icons-material";
 
 import {
   getTicketsBoard,
-  getUsers,
   createTicket,
   updateTicket,
   getTicketCategories,
   getTicketSubcategories,
-} from "../services/api";
-import { initialColumns, PRIORITY_RANK } from "../utils/index";
+  getUsers,              // 👈 import this
+} from "../../services/api";
+import { initialColumns, PRIORITY_RANK } from "../../utils/index";
 
-import TicketColumn from "../components/tickets/TicketColumn";
-import NewTicketDialog from "../components/tickets/NewTicketDialog";
-import TicketDetailsDialog from "../components/tickets/TicketDetailsDialog";
-import DueDateDialog from "../components/tickets/DueDateDialog";
-import PriorityPopover from "../components/tickets/PriorityPopover";
+import TicketColumn from "../../components/tickets/TicketColumn";
+import NewTicketDialog from "../../components/tickets/NewTicketDialog";
+import TicketDetailsDialog from "../../components/tickets/TicketDetailsDialog";
+import DueDateDialog from "../../components/tickets/DueDateDialog";
+import PriorityPopover from "../../components/tickets/PriorityPopover";
 
-import Select from "react-select";
+export default function UserTicketBoard() {
+  /* ========================
+        CURRENT USER
+     ======================== */
+  const [currentUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      console.error("Failed to parse user from localStorage", e);
+      return null;
+    }
+  });
 
-export default function TicketBoard() {
+  /* ========================
+        STATE
+     ======================== */
+
   const [columns, setColumns] = useState(initialColumns);
   const [loadingTickets, setLoadingTickets] = useState(false);
 
   // New ticket dialog
   const [openNewTicket, setOpenNewTicket] = useState(false);
+
+  // 🔹 full users list (not just current user)
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
@@ -48,24 +56,22 @@ export default function TicketBoard() {
   const [ticketDetail, setTicketDetail] = useState(null);
   const [openTicketModal, setOpenTicketModal] = useState(false);
 
-  const [newTicket, setNewTicket] = useState({
+  const [newTicket, setNewTicket] = useState(() => ({
     title: "",
-    assigneeId: "",
+    assigneeId:"",// currentUser?.id || "", // default self
     description: "",
-    assigneeName: "",
+    assigneeName:
+      currentUser?.name ||
+      currentUser?.fullName ||
+      currentUser?.email ||
+      "",
     dueDate: "",
     status: "todo",
     priority: "low",
     attachments: [],
     categoryId: "",
     subcategoryId: "",
-  });
-
-  // Assignee filter (single user)
-  const [selectedAssignee, setSelectedAssignee] = useState(null);
-
-  // Assignee side panel
-  const [openAssigneePanel, setOpenAssigneePanel] = useState(false);
+  }));
 
   // Due date dialog
   const [dueDateDialog, setDueDateDialog] = useState({
@@ -86,10 +92,30 @@ export default function TicketBoard() {
         LOAD TICKETS & MASTERS
      ======================== */
   useEffect(() => {
-    loadTickets();      // default: all data
+    // For user: load only their tickets (if we have id)
+    if (currentUser?.id) {
+      loadTickets(currentUser.id);
+    } else {
+      loadTickets();
+    }
+
     loadCategories();
-    fetchUsersList();   // for assignee filter + dialog
-  }, []);
+    fetchUsersList();       // 👈 load all users for assignee dropdown
+  }, [currentUser?.id]);
+
+  const fetchUsersList = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await getUsers();
+      const data = res.data;
+      const list = Array.isArray(data) ? data : data.data || data.users || [];
+      setUsers(list);
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const loadTickets = async (assigneeId = null) => {
     try {
@@ -99,8 +125,7 @@ export default function TicketBoard() {
       if (assigneeId) {
         params.assigneeId = assigneeId;
       }
-
-      const res = await getTicketsBoard(params);
+      const res = await getTicketsBoard({ type: "created" })
       const data = res.data;
       const rows = Array.isArray(data) ? data : data.data || [];
 
@@ -195,11 +220,22 @@ export default function TicketBoard() {
 
   const handleOpenNewTicket = () => {
     setOpenNewTicket(true);
-    if (users.length === 0) {
-      fetchUsersList();
-    }
+
+    // default self as assignee
+    // if (currentUser) {
+    //   setNewTicket((prev) => ({
+    //     ...prev,
+    //     assigneeId: currentUser.id,
+    //     assigneeName:
+    //       currentUser.name || currentUser.fullName || currentUser.email || "",
+    //   }));
+    // }
+
     if (categories.length === 0) {
       loadCategories();
+    }
+    if (users.length === 0) {
+      fetchUsersList();
     }
   };
 
@@ -207,9 +243,13 @@ export default function TicketBoard() {
     setOpenNewTicket(false);
     setNewTicket({
       title: "",
-      assigneeId: "",
+      assigneeId:"",// currentUser?.id || "",
       description: "",
-      assigneeName: "",
+      assigneeName:
+        currentUser?.name ||
+        currentUser?.fullName ||
+        currentUser?.email ||
+        "",
       dueDate: "",
       status: "todo",
       priority: "low",
@@ -218,20 +258,6 @@ export default function TicketBoard() {
       subcategoryId: "",
     });
     setSubcategories([]);
-  };
-
-  const fetchUsersList = async () => {
-    try {
-      setLoadingUsers(true);
-      const res = await getUsers();
-      const data = res.data;
-      const list = Array.isArray(data) ? data : data.data || data.users || [];
-      setUsers(list);
-    } catch (err) {
-      console.error("Failed to fetch users", err);
-    } finally {
-      setLoadingUsers(false);
-    }
   };
 
   const handleNewTicketChange = (field) => (event) => {
@@ -276,64 +302,152 @@ export default function TicketBoard() {
     }
   };
 
-  const handleCreateTicket = async () => {
-    if (!newTicket.title.trim()) return;
+//   const handleCreateTicket = async () => {
+//     if (!newTicket.title.trim()) return;
 
-    try {
-      const form = new FormData();
-      form.append("title", newTicket.title);
-      form.append("description", newTicket.description);
-      form.append("assigned_to", newTicket.assigneeId || "");
-      form.append("due_date", newTicket.dueDate || "");
-      form.append("status", newTicket.status);
-      form.append("priority", newTicket.priority);
-      form.append("category_id", newTicket.categoryId || "");
-      form.append("subcategory_id", newTicket.subcategoryId || "");
+//     try {
+//       const form = new FormData();
+//       form.append("title", newTicket.title);
+//       form.append("description", newTicket.description);
 
-      newTicket.attachments.forEach((file) => {
-        form.append("attachments", file);
-      });
+//  // ✅ Only send if user actually selected an assignee
+//      if (newTicket.assigneeId) {
+//       form.append("assigned_to", newTicket.assigneeId);
+//     }
 
-      const res = await createTicket(form);
+//       form.append("due_date", newTicket.dueDate || "");
+//       form.append("status", newTicket.status);
+//       form.append("priority", newTicket.priority);
+//       form.append("category_id", newTicket.categoryId || "");
+//       form.append("subcategory_id", newTicket.subcategoryId || "");
 
-      const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
-      const columnId = newTicket.status;
+//       newTicket.attachments.forEach((file) => {
+//         form.append("attachments", file);
+//       });
 
-      const newTask = {
-        id: ticketIdFromBackend,
-        title: newTicket.title,
-        description: newTicket.description,
-        assigneeName: newTicket.assigneeName,
-        assigneeId: newTicket.assigneeId,
-        dueDate: newTicket.dueDate,
-        priority: newTicket.priority || "low",
-        attachments: newTicket.attachments,
-      };
+//       const res = await createTicket(form);
 
-      setColumns((prev) =>
-        prev.map((col) => {
-          if (col.id !== columnId) return col;
+//       const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
+//       const columnId = newTicket.status;
 
-          const updatedTasks = [newTask, ...col.tasks];
+//       // pick name from users list if exists
+//       const assigneeUser =
+//         users.find((u) => String(u.id) === String(finalAssigneeId)) ||
+//         currentUser;
 
-          if (columnId !== "completed") {
-            updatedTasks.sort(
-              (a, b) =>
-                (PRIORITY_RANK[b.priority] || 1) -
-                (PRIORITY_RANK[a.priority] || 1)
-            );
-          }
+//       const newTask = {
+//         id: ticketIdFromBackend,
+//         title: newTicket.title,
+//         description: newTicket.description,
+//         assigneeName:
+//           assigneeUser?.name ||
+//           assigneeUser?.fullName ||
+//           assigneeUser?.email ||
+//           newTicket.assigneeName,
+//         assigneeId: finalAssigneeId,
+//         dueDate: newTicket.dueDate,
+//         priority: newTicket.priority || "low",
+//         attachments: newTicket.attachments,
+//       };
 
-          return { ...col, tasks: updatedTasks };
-        })
-      );
+//       setColumns((prev) =>
+//         prev.map((col) => {
+//           if (col.id !== columnId) return col;
 
-      handleCloseNewTicket();
-    } catch (err) {
-      console.error("Failed to create ticket:", err);
-      alert("Failed to create ticket. Please try again.");
+//           const updatedTasks = [newTask, ...col.tasks];
+
+//           if (columnId !== "completed") {
+//             updatedTasks.sort(
+//               (a, b) =>
+//                 (PRIORITY_RANK[b.priority] || 1) -
+//                 (PRIORITY_RANK[a.priority] || 1)
+//             );
+//           }
+
+//           return { ...col, tasks: updatedTasks };
+//         })
+//       );
+
+//       handleCloseNewTicket();
+//     } catch (err) {
+//       console.error("Failed to create ticket:", err);
+//       alert("Failed to create ticket. Please try again.");
+//     }
+//   };
+const handleCreateTicket = async () => {
+  if (!newTicket.title.trim()) return;
+
+  try {
+    const form = new FormData();
+    form.append("title", newTicket.title);
+    form.append("description", newTicket.description);
+
+    // ✅ Only send if user actually selected an assignee
+    if (newTicket.assigneeId) {
+      form.append("assigned_to", newTicket.assigneeId);
     }
-  };
+
+    form.append("due_date", newTicket.dueDate || "");
+    form.append("status", newTicket.status);
+    form.append("priority", newTicket.priority);
+    form.append("category_id", newTicket.categoryId || "");
+    form.append("subcategory_id", newTicket.subcategoryId || "");
+
+    newTicket.attachments.forEach((file) => {
+      form.append("attachments", file);
+    });
+
+    const res = await createTicket(form);
+
+    const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
+    const columnId = newTicket.status;
+
+    // 👇 Use selected assignee *only if* present
+    const selectedAssigneeId = newTicket.assigneeId || null;
+
+    const assigneeUser = selectedAssigneeId
+      ? users.find((u) => String(u.id) === String(selectedAssigneeId))
+      : null;
+
+    const newTask = {
+      id: ticketIdFromBackend,
+      title: newTicket.title,
+      description: newTicket.description,
+      assigneeName:
+        assigneeUser?.name ||
+        assigneeUser?.fullName ||
+        assigneeUser?.email ||
+        "",                  // empty if no assignee
+      assigneeId: selectedAssigneeId, // null if not selected
+      dueDate: newTicket.dueDate,
+      priority: newTicket.priority || "low",
+      attachments: newTicket.attachments,
+    };
+
+    setColumns((prev) =>
+      prev.map((col) => {
+        if (col.id !== columnId) return col;
+
+        const updatedTasks = [newTask, ...col.tasks];
+
+        if (columnId !== "completed") {
+          updatedTasks.sort(
+            (a, b) =>
+              (PRIORITY_RANK[b.priority] || 1) -
+              (PRIORITY_RANK[a.priority] || 1)
+          );
+        }
+
+        return { ...col, tasks: updatedTasks };
+      })
+    );
+
+    handleCloseNewTicket();
+  } catch (err) {
+    console.error("Failed to create ticket:", err);
+    alert("Failed to create ticket. Please try again.");
+  }
+};
 
   /* ========================
         TICKET MODAL HANDLERS
@@ -557,25 +671,6 @@ export default function TicketBoard() {
   };
 
   /* ========================
-        Assignee options & handler
-     ======================== */
-
-  const assigneeOptions = users.map((u) => ({
-    value: u.id,
-    label: u.name || u.fullName || u.email,
-  }));
-
-  const handleAssigneeFilterChange = async (option) => {
-    setSelectedAssignee(option);
-    if (!option) {
-      // clear filter => load all tickets
-      await loadTickets();
-    } else {
-      await loadTickets(option.value);
-    }
-  };
-
-  /* ========================
             RENDER
      ======================== */
 
@@ -591,7 +686,7 @@ export default function TicketBoard() {
       >
         <Box>
           <Typography variant="h6" fontWeight={600}>
-            Ticket Dashboard
+            My Tickets
           </Typography>
           {loadingTickets && (
             <Typography variant="caption" color="text.secondary">
@@ -601,23 +696,6 @@ export default function TicketBoard() {
         </Box>
 
         <Box display="flex" alignItems="center" gap={2}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<PeopleAltIcon />}
-            onClick={() => setOpenAssigneePanel(true)}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 500,
-              backgroundColor: "white",
-              boxShadow: 1,
-              "&:hover": { backgroundColor: "#f9fafb" },
-            }}
-          >
-            Assignees
-          </Button>
-
           <Button
             variant="outlined"
             size="small"
@@ -664,7 +742,7 @@ export default function TicketBoard() {
         open={openNewTicket}
         onClose={handleCloseNewTicket}
         newTicket={newTicket}
-        users={users}
+        users={users} // 👈 now full list, default selected = current user
         categories={categories}
         subcategories={subcategories}
         loadingUsers={loadingUsers}
@@ -702,70 +780,6 @@ export default function TicketBoard() {
         onClose={closeFlagMenu}
         onSelectPriority={setTaskPriority}
       />
-
-      {/* Assignee Side Panel (Drawer) */}
-      <Drawer
-        anchor="right"
-        open={openAssigneePanel}
-        onClose={() => setOpenAssigneePanel(false)}
-      >
-        <Box
-          sx={{
-            width: 320,
-            p: 2,
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-          }}
-        >
-          {/* Header */}
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Typography variant="subtitle1" fontWeight={600}>
-              Assignees
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={() => setOpenAssigneePanel(false)}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
-          {/* Search / Select */}
-          <Select
-            isClearable
-            options={assigneeOptions}
-            value={selectedAssignee}
-            onChange={handleAssigneeFilterChange}
-            placeholder={
-              loadingUsers ? "Loading users..." : "Search by user or team"
-            }
-            styles={{
-              control: (base) => ({
-                ...base,
-                minHeight: 38,
-                borderRadius: 8,
-                borderColor: "#805ad5",
-                boxShadow: "none",
-                "&:hover": { borderColor: "#805ad5" },
-              }),
-            }}
-          />
-
-          {/* Info text */}
-          {!selectedAssignee && (
-            <Typography variant="body2" color="text.secondary">
-              No tasks have been assigned yet. Set assignees on tasks to get
-              started.
-            </Typography>
-          )}
-        </Box>
-      </Drawer>
     </div>
   );
 }
