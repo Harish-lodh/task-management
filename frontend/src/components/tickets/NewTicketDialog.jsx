@@ -37,9 +37,14 @@ export default function NewTicketDialog({
     return data;
   });
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{
+    sx: {
+      width: 500,
+      maxHeight: "90vh",      // dialog won't exceed 80% of viewport height
+    },
+  }}>
       <DialogTitle>Create New Ticket</DialogTitle>
-      <DialogContent sx={{ pt: 1, pb: 0 }}>
+      <DialogContent sx={{ pt: 1, pb: 0}}>
         <Stack spacing={2} mt={1}>
           <TextField
             label="Incident"
@@ -197,8 +202,8 @@ export default function NewTicketDialog({
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={onCreate}>
+        <Button onClick={onClose} sx={{color:"#1e40af"}}>Cancel</Button>
+        <Button variant="contained" onClick={onCreate} sx={{backgroundColor:"#1e40af"}}>
           Create
         </Button>
       </DialogActions>
