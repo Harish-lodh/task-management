@@ -13,7 +13,7 @@ import {
   Button,
   Typography,
 } from "@mui/material";
-
+import { useState } from "react";
 export default function NewTicketDialog({
   open,
   onClose,
@@ -31,6 +31,11 @@ export default function NewTicketDialog({
   onAttachmentsChange,
   onCreate,
 }) {
+
+  const [currentUser] = useState(() => {
+    const data = JSON.parse(localStorage.getItem("user"));
+    return data;
+  });
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Create New Ticket</DialogTitle>
@@ -150,16 +155,16 @@ export default function NewTicketDialog({
               ))}
             </Select>
           </FormControl>
-
-          <TextField
-            label="Due Date"
-            type="date"
-            size="small"
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-            value={newTicket.dueDate}
-            onChange={onFieldChange("dueDate")}
-          />
+          {(currentUser?.role).toLowerCase() !== "user" && (
+            <TextField
+              label="Due Date"
+              type="date"
+              size="small"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={newTicket.dueDate}
+              onChange={onFieldChange("dueDate")}
+            />)}
 
           {/* <FormControl size="small" fullWidth>
             <InputLabel id="status-label">Status</InputLabel>
