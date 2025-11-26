@@ -704,8 +704,9 @@ const handleCreateTicket = async () => {
             sx={{
               borderRadius: 2,
               textTransform: "none",
-              fontWeight: 500,
               backgroundColor: "white",
+               fontWeight: "bold", 
+              color: "#1E40AF",
               boxShadow: 1,
               "&:hover": { backgroundColor: "#f9fafb" },
             }}
