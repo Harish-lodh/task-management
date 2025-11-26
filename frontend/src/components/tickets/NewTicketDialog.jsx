@@ -13,7 +13,8 @@ import {
   Button,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 export default function NewTicketDialog({
   open,
   onClose,
@@ -31,20 +32,72 @@ export default function NewTicketDialog({
   onAttachmentsChange,
   onCreate,
 }) {
-
   const [currentUser] = useState(() => {
     const data = JSON.parse(localStorage.getItem("user"));
     return data;
   });
+
+  const [isOtherCategory, setIsOtherCategory] = useState(false);
+  const [displayCategory, setDisplayCategory] = useState(
+    newTicket.categoryId || ""
+  );
+
+  // ✅ boolean just for red border on Assignee
+  const [assigneeError, setAssigneeError] = useState(false);
+
+  useEffect(() => {
+    if (newTicket.categoryId !== null && newTicket.categoryId !== undefined) {
+      setDisplayCategory(newTicket.categoryId);
+      setIsOtherCategory(false);
+      setAssigneeError(false);
+    }
+  }, [newTicket.categoryId]);
+
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    if (value === "other") {
+      onCategoryChange({ target: { value: null } });
+      setDisplayCategory("other");
+      setIsOtherCategory(true);
+      // don't set error here; only on create
+    } else {
+      onCategoryChange(e);
+      setDisplayCategory(value);
+      setIsOtherCategory(false);
+      setAssigneeError(false); // clear error when leaving "Other"
+    }
+  };
+
+  const handleAssigneeChange = (e) => {
+    onAssigneeChange(e);
+    setAssigneeError(false); // clear error when user selects an assignee
+  };
+
+  const handleCreate = () => {
+    if (isOtherCategory && !newTicket.assigneeId) {
+      // 🔴 trigger red border on Assignee
+      setAssigneeError(true);
+      return;
+    }
+    setAssigneeError(false);
+    onCreate();
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{
-    sx: {
-      width: 500,
-      maxHeight: "90vh",      // dialog won't exceed 80% of viewport height
-    },
-  }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          width: 500,
+          maxHeight: "90vh",
+        },
+      }}
+    >
       <DialogTitle>Create New Ticket</DialogTitle>
-      <DialogContent sx={{ pt: 1, pb: 0}}>
+      <DialogContent sx={{ pt: 1, pb: 0 }}>
         <Stack spacing={2} mt={1}>
           <TextField
             label="Incident"
@@ -62,8 +115,8 @@ export default function NewTicketDialog({
             <Select
               labelId="category-label"
               label={loadingCategories ? "Loading categories..." : "Category"}
-              value={newTicket.categoryId}
-              onChange={onCategoryChange}
+              value={displayCategory}
+              onChange={handleCategoryChange}
               disabled={loadingCategories}
             >
               {categories.map((cat) => (
@@ -71,6 +124,7 @@ export default function NewTicketDialog({
                   {cat.name}
                 </MenuItem>
               ))}
+              <MenuItem value="other">Other</MenuItem>
             </Select>
           </FormControl>
 
@@ -142,15 +196,31 @@ export default function NewTicketDialog({
             </Typography>
           )}
 
-          <FormControl size="small" fullWidth>
+          {/* Assignee – red border only when required & empty */}
+          <FormControl
+            size="small"
+            fullWidth
+            required={isOtherCategory}
+            error={assigneeError} // 🔴 this enables red border/label
+          >
             <InputLabel id="assignee-label">
-              {loadingUsers ? "Loading users..." : "Assignee (optional)"}
+              {loadingUsers
+                ? "Loading users..."
+                : isOtherCategory
+                ? "Assignee *"
+                : "Assignee (optional)"}
             </InputLabel>
             <Select
               labelId="assignee-label"
-              label={loadingUsers ? "Loading users..." : "Assignee (optional)"}
+              label={
+                loadingUsers
+                  ? "Loading users..."
+                  : isOtherCategory
+                  ? "Assignee *"
+                  : "Assignee (optional)"
+              }
               value={newTicket.assigneeId}
-              onChange={onAssigneeChange}
+              onChange={handleAssigneeChange}
               disabled={loadingUsers}
             >
               {users.map((user) => (
@@ -160,7 +230,8 @@ export default function NewTicketDialog({
               ))}
             </Select>
           </FormControl>
-          {(currentUser?.role).toLowerCase() !== "user" && (
+
+          {(currentUser?.role || "").toLowerCase() !== "user" && (
             <TextField
               label="Due Date"
               type="date"
@@ -169,21 +240,8 @@ export default function NewTicketDialog({
               InputLabelProps={{ shrink: true }}
               value={newTicket.dueDate}
               onChange={onFieldChange("dueDate")}
-            />)}
-
-          {/* <FormControl size="small" fullWidth>
-            <InputLabel id="status-label">Status</InputLabel>
-            <Select
-              labelId="status-label"
-              label="Status"
-              value={newTicket.status}
-              onChange={onFieldChange("status")}
-            >
-              <MenuItem value="todo">TO DO</MenuItem>
-              <MenuItem value="in-progress">IN PROGRESS</MenuItem>
-              <MenuItem value="completed">COMPLETED</MenuItem>
-            </Select>
-          </FormControl> */}
+            />
+          )}
 
           <FormControl size="small" fullWidth>
             <InputLabel id="priority-label">Priority</InputLabel>
@@ -202,8 +260,14 @@ export default function NewTicketDialog({
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{color:"#1e40af"}}>Cancel</Button>
-        <Button variant="contained" onClick={onCreate} sx={{backgroundColor:"#1e40af"}}>
+        <Button onClick={onClose} sx={{ color: "#1e40af" }}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleCreate}
+          sx={{ backgroundColor: "#1e40af" }}
+        >
           Create
         </Button>
       </DialogActions>
