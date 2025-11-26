@@ -18,7 +18,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
     if (!token) return;
     try {
       const userString = localStorage.getItem("user");
-      const user=JSON.parse(userString)
+      const user = JSON.parse(userString)
       setDisplayName(user?.name || "user");
     } catch {
       setDisplayName("");
@@ -48,12 +48,12 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
   return (
     <header
       className="
-        fixed top-0 left-0 right-0
-        h-16 bg-white
-        border-b border-gray-200
-        flex items-center
-        px-4 sm:px-6 lg:px-8 z-50
-      "
+    fixed top-0 left-0 right-0 
+    h-12 bg-white
+    border-b border-gray-200
+    flex items-center
+    px-4 sm:px-6 lg:px-8 z-50
+  "
     >
       {/* LEFT: Hamburger Menu (Mobile) & Brand */}
       <div className="flex items-center gap-3">
@@ -66,7 +66,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
         </button>
         <div className="flex items-center gap-10 sm:gap-10">
           <img src={logo} alt="Fintree" className="h-8 w-auto object-contain" />
-          <h1 className="text-sm sm:text-lg font-bold text-gray-800 hidden sm:block">
+          <h1 className="text-sm sm:text-lg font-bold text-blue-800 hidden sm:block">
             Ticket-management
           </h1>
         </div>
@@ -76,7 +76,7 @@ const Header = ({ toggleSidebar, isSidebarOpen }) => {
       <div ref={menuRef} className="relative ml-auto">
         <button
           type="button"
-          className="flex items-center gap-1 sm:gap-2 px-2 py-1 rounded-md hover:bg-gray-100 focus:outline-none"
+          className="flex items-center gap-1 bg-white text-blue-900 sm:gap-2 px-2 py-1 rounded-md hover:bg-gray-100 focus:outline-none"
           onClick={() => setOpen((s) => !s)}
           aria-haspopup="menu"
           aria-expanded={open}

@@ -32,6 +32,7 @@ const AppRoutes = () => {
                     <Route path="/my-tickets" element={<MyticketsForAdmin />} />
 
                 {/* user only */}
+                <Route path="/user-dashboard" element={<h1>user dashboard</h1>}/>
                 <Route path="/user/tickets" element={< AssignTicketBoard/>} />
                 <Route path="/user/my-tickets" element={< Mytickets/>} />
 

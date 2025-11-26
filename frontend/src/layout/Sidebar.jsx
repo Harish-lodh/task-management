@@ -77,7 +77,7 @@ const Sidebar = () => {
 
   return (
     <aside className="flex flex-col h-full bg-white border-r border-gray-200">
-      <nav className="flex-1 overflow-y-auto p-3 text-sm sm:text-base">
+      <nav className="flex-1 overflow-y-auto p-3  text-sm sm:text-base">
         {menuSections.map((section) => {
           const isOpen = openSection === section.label;
           const Icon = section.icon;
@@ -89,7 +89,7 @@ const Sidebar = () => {
                 key={section.label}
                 to={section.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 w-full p-2 rounded-lg transition-all 
+                  `flex items-center gap-2 w-full p-2 rounded-lg transition-all
                    ${
                      isActive
                        ? "text-blue-800 font-semibold bg-blue-50"
@@ -108,7 +108,7 @@ const Sidebar = () => {
             <div key={section.label} className="mb-2">
               <button
                 onClick={() => toggleSection(section.label)}
-                className={`flex items-center justify-between w-full p-2 rounded-lg font-semibold transition-all 
+                className={`flex items-center justify-between w-full p-2 rounded-lg font-semibold transition-all mt-1
                 ${
                   isOpen
                     ? "text-blue-800 bg-blue-50"
