@@ -58,7 +58,7 @@ export default function UserTicketBoard() {
 
   const [newTicket, setNewTicket] = useState(() => ({
     title: "",
-    assigneeId:"",// currentUser?.id || "", // default self
+    assigneeId: "",// currentUser?.id || "", // default self
     description: "",
     assigneeName:
       currentUser?.name ||
@@ -243,7 +243,7 @@ export default function UserTicketBoard() {
     setOpenNewTicket(false);
     setNewTicket({
       title: "",
-      assigneeId:"",// currentUser?.id || "",
+      assigneeId: "",// currentUser?.id || "",
       description: "",
       assigneeName:
         currentUser?.name ||
@@ -302,152 +302,152 @@ export default function UserTicketBoard() {
     }
   };
 
-//   const handleCreateTicket = async () => {
-//     if (!newTicket.title.trim()) return;
+  //   const handleCreateTicket = async () => {
+  //     if (!newTicket.title.trim()) return;
 
-//     try {
-//       const form = new FormData();
-//       form.append("title", newTicket.title);
-//       form.append("description", newTicket.description);
+  //     try {
+  //       const form = new FormData();
+  //       form.append("title", newTicket.title);
+  //       form.append("description", newTicket.description);
 
-//  // ✅ Only send if user actually selected an assignee
-//      if (newTicket.assigneeId) {
-//       form.append("assigned_to", newTicket.assigneeId);
-//     }
+  //  // ✅ Only send if user actually selected an assignee
+  //      if (newTicket.assigneeId) {
+  //       form.append("assigned_to", newTicket.assigneeId);
+  //     }
 
-//       form.append("due_date", newTicket.dueDate || "");
-//       form.append("status", newTicket.status);
-//       form.append("priority", newTicket.priority);
-//       form.append("category_id", newTicket.categoryId || "");
-//       form.append("subcategory_id", newTicket.subcategoryId || "");
+  //       form.append("due_date", newTicket.dueDate || "");
+  //       form.append("status", newTicket.status);
+  //       form.append("priority", newTicket.priority);
+  //       form.append("category_id", newTicket.categoryId || "");
+  //       form.append("subcategory_id", newTicket.subcategoryId || "");
 
-//       newTicket.attachments.forEach((file) => {
-//         form.append("attachments", file);
-//       });
+  //       newTicket.attachments.forEach((file) => {
+  //         form.append("attachments", file);
+  //       });
 
-//       const res = await createTicket(form);
+  //       const res = await createTicket(form);
 
-//       const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
-//       const columnId = newTicket.status;
+  //       const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
+  //       const columnId = newTicket.status;
 
-//       // pick name from users list if exists
-//       const assigneeUser =
-//         users.find((u) => String(u.id) === String(finalAssigneeId)) ||
-//         currentUser;
+  //       // pick name from users list if exists
+  //       const assigneeUser =
+  //         users.find((u) => String(u.id) === String(finalAssigneeId)) ||
+  //         currentUser;
 
-//       const newTask = {
-//         id: ticketIdFromBackend,
-//         title: newTicket.title,
-//         description: newTicket.description,
-//         assigneeName:
-//           assigneeUser?.name ||
-//           assigneeUser?.fullName ||
-//           assigneeUser?.email ||
-//           newTicket.assigneeName,
-//         assigneeId: finalAssigneeId,
-//         dueDate: newTicket.dueDate,
-//         priority: newTicket.priority || "low",
-//         attachments: newTicket.attachments,
-//       };
+  //       const newTask = {
+  //         id: ticketIdFromBackend,
+  //         title: newTicket.title,
+  //         description: newTicket.description,
+  //         assigneeName:
+  //           assigneeUser?.name ||
+  //           assigneeUser?.fullName ||
+  //           assigneeUser?.email ||
+  //           newTicket.assigneeName,
+  //         assigneeId: finalAssigneeId,
+  //         dueDate: newTicket.dueDate,
+  //         priority: newTicket.priority || "low",
+  //         attachments: newTicket.attachments,
+  //       };
 
-//       setColumns((prev) =>
-//         prev.map((col) => {
-//           if (col.id !== columnId) return col;
+  //       setColumns((prev) =>
+  //         prev.map((col) => {
+  //           if (col.id !== columnId) return col;
 
-//           const updatedTasks = [newTask, ...col.tasks];
+  //           const updatedTasks = [newTask, ...col.tasks];
 
-//           if (columnId !== "completed") {
-//             updatedTasks.sort(
-//               (a, b) =>
-//                 (PRIORITY_RANK[b.priority] || 1) -
-//                 (PRIORITY_RANK[a.priority] || 1)
-//             );
-//           }
+  //           if (columnId !== "completed") {
+  //             updatedTasks.sort(
+  //               (a, b) =>
+  //                 (PRIORITY_RANK[b.priority] || 1) -
+  //                 (PRIORITY_RANK[a.priority] || 1)
+  //             );
+  //           }
 
-//           return { ...col, tasks: updatedTasks };
-//         })
-//       );
+  //           return { ...col, tasks: updatedTasks };
+  //         })
+  //       );
 
-//       handleCloseNewTicket();
-//     } catch (err) {
-//       console.error("Failed to create ticket:", err);
-//       alert("Failed to create ticket. Please try again.");
-//     }
-//   };
-const handleCreateTicket = async () => {
-  if (!newTicket.title.trim()) return;
+  //       handleCloseNewTicket();
+  //     } catch (err) {
+  //       console.error("Failed to create ticket:", err);
+  //       alert("Failed to create ticket. Please try again.");
+  //     }
+  //   };
+  const handleCreateTicket = async () => {
+    if (!newTicket.title.trim()) return;
 
-  try {
-    const form = new FormData();
-    form.append("title", newTicket.title);
-    form.append("description", newTicket.description);
+    try {
+      const form = new FormData();
+      form.append("title", newTicket.title);
+      form.append("description", newTicket.description);
 
-    // ✅ Only send if user actually selected an assignee
-    if (newTicket.assigneeId) {
-      form.append("assigned_to", newTicket.assigneeId);
+      // ✅ Only send if user actually selected an assignee
+      if (newTicket.assigneeId) {
+        form.append("assigned_to", newTicket.assigneeId);
+      }
+
+      form.append("due_date", newTicket.dueDate || "");
+      form.append("status", newTicket.status);
+      form.append("priority", newTicket.priority);
+      form.append("category_id", newTicket.categoryId || "");
+      form.append("subcategory_id", newTicket.subcategoryId || "");
+
+      newTicket.attachments.forEach((file) => {
+        form.append("attachments", file);
+      });
+
+      const res = await createTicket(form);
+
+      const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
+      const columnId = newTicket.status;
+
+      // 👇 Use selected assignee *only if* present
+      const selectedAssigneeId = newTicket.assigneeId || null;
+
+      const assigneeUser = selectedAssigneeId
+        ? users.find((u) => String(u.id) === String(selectedAssigneeId))
+        : null;
+
+      const newTask = {
+        id: ticketIdFromBackend,
+        title: newTicket.title,
+        description: newTicket.description,
+        assigneeName:
+          assigneeUser?.name ||
+          assigneeUser?.fullName ||
+          assigneeUser?.email ||
+          "",                  // empty if no assignee
+        assigneeId: selectedAssigneeId, // null if not selected
+        dueDate: newTicket.dueDate,
+        priority: newTicket.priority || "low",
+        attachments: newTicket.attachments,
+      };
+
+      setColumns((prev) =>
+        prev.map((col) => {
+          if (col.id !== columnId) return col;
+
+          const updatedTasks = [newTask, ...col.tasks];
+
+          if (columnId !== "completed") {
+            updatedTasks.sort(
+              (a, b) =>
+                (PRIORITY_RANK[b.priority] || 1) -
+                (PRIORITY_RANK[a.priority] || 1)
+            );
+          }
+
+          return { ...col, tasks: updatedTasks };
+        })
+      );
+
+      handleCloseNewTicket();
+    } catch (err) {
+      console.error("Failed to create ticket:", err);
+      alert("Failed to create ticket. Please try again.");
     }
-
-    form.append("due_date", newTicket.dueDate || "");
-    form.append("status", newTicket.status);
-    form.append("priority", newTicket.priority);
-    form.append("category_id", newTicket.categoryId || "");
-    form.append("subcategory_id", newTicket.subcategoryId || "");
-
-    newTicket.attachments.forEach((file) => {
-      form.append("attachments", file);
-    });
-
-    const res = await createTicket(form);
-
-    const ticketIdFromBackend = res.data?.id || `t-${Date.now()}`;
-    const columnId = newTicket.status;
-
-    // 👇 Use selected assignee *only if* present
-    const selectedAssigneeId = newTicket.assigneeId || null;
-
-    const assigneeUser = selectedAssigneeId
-      ? users.find((u) => String(u.id) === String(selectedAssigneeId))
-      : null;
-
-    const newTask = {
-      id: ticketIdFromBackend,
-      title: newTicket.title,
-      description: newTicket.description,
-      assigneeName:
-        assigneeUser?.name ||
-        assigneeUser?.fullName ||
-        assigneeUser?.email ||
-        "",                  // empty if no assignee
-      assigneeId: selectedAssigneeId, // null if not selected
-      dueDate: newTicket.dueDate,
-      priority: newTicket.priority || "low",
-      attachments: newTicket.attachments,
-    };
-
-    setColumns((prev) =>
-      prev.map((col) => {
-        if (col.id !== columnId) return col;
-
-        const updatedTasks = [newTask, ...col.tasks];
-
-        if (columnId !== "completed") {
-          updatedTasks.sort(
-            (a, b) =>
-              (PRIORITY_RANK[b.priority] || 1) -
-              (PRIORITY_RANK[a.priority] || 1)
-          );
-        }
-
-        return { ...col, tasks: updatedTasks };
-      })
-    );
-
-    handleCloseNewTicket();
-  } catch (err) {
-    console.error("Failed to create ticket:", err);
-    alert("Failed to create ticket. Please try again.");
-  }
-};
+  };
 
   /* ========================
         TICKET MODAL HANDLERS
@@ -704,10 +704,10 @@ const handleCreateTicket = async () => {
             sx={{
               borderRadius: 2,
               textTransform: "none",
-              fontWeight: 500,
-              color: "#1f2933",
               backgroundColor: "white",
-              boxShadow: 1,
+              fontWeight: "bold",
+              color: "#1E40AF",
+              boxShadow: 0,
               "&:hover": { backgroundColor: "#f9fafb" },
             }}
           >

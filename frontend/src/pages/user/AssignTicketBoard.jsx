@@ -701,12 +701,13 @@ const handleCreateTicket = async () => {
             size="small"
             startIcon={<Add />}
             onClick={handleOpenNewTicket}
-            sx={{
+          sx={{
               borderRadius: 2,
               textTransform: "none",
-              fontWeight: 500,
               backgroundColor: "white",
-              boxShadow: 1,
+               fontWeight: "bold", 
+              color: "#1E40AF",
+              boxShadow: 0,
               "&:hover": { backgroundColor: "#f9fafb" },
             }}
           >

@@ -98,10 +98,10 @@ export default function TicketBoard() {
       const params = {};
       if (assigneeId) {
         params.assigneeId = assigneeId;
-        params.type="assigned"
+        params.type = "assigned"
       }
-      
-     console.log("params",params)
+
+      console.log("params", params)
       const res = await getTicketsBoard(params);
       const data = res.data;
       const rows = Array.isArray(data) ? data : data.data || [];
@@ -569,7 +569,7 @@ export default function TicketBoard() {
 
   const handleAssigneeFilterChange = async (option) => {
     setSelectedAssignee(option);
-    console.log("option--",option)
+    console.log("option--", option)
     if (!option) {
       // clear filter => load all tickets
       await loadTickets();
@@ -612,9 +612,10 @@ export default function TicketBoard() {
             sx={{
               borderRadius: 2,
               textTransform: "none",
-              fontWeight: 500,
               backgroundColor: "white",
-              boxShadow: 1,
+              fontWeight: "bold",
+              color: "#1E40AF",
+              boxShadow: 0,
               "&:hover": { backgroundColor: "#f9fafb" },
             }}
           >
@@ -629,9 +630,10 @@ export default function TicketBoard() {
             sx={{
               borderRadius: 2,
               textTransform: "none",
-              fontWeight: 500,
               backgroundColor: "white",
-              boxShadow: 1,
+              fontWeight: "bold",
+              color: "#1E40AF",
+              boxShadow: 0,
               "&:hover": { backgroundColor: "#f9fafb" },
             }}
           >

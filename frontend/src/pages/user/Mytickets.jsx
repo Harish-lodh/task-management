@@ -707,7 +707,7 @@ const handleCreateTicket = async () => {
               backgroundColor: "white",
                fontWeight: "bold", 
               color: "#1E40AF",
-              boxShadow: 1,
+              boxShadow: 0,
               "&:hover": { backgroundColor: "#f9fafb" },
             }}
           >
