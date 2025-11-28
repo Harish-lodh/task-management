@@ -16,7 +16,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5005;
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -32,5 +32,5 @@ app.use("/dashboard", dashboardRoutes);
 app.use("/users", userRoutes); // 👈 add this line
 app.use("/ticket-masters", ticketMastersRouter);
 app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on port:${PORT}`);
 });
