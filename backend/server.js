@@ -31,6 +31,7 @@ app.use("/dashboard", dashboardRoutes);
 // ❌ remove: app.use("/api/projects", projectRoutes);
 app.use("/users", userRoutes); // 👈 add this line
 app.use("/ticket-masters", ticketMastersRouter);
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port:${PORT}`);
 });
+
