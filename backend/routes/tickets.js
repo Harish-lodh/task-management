@@ -3,57 +3,14 @@ import { Router } from "express";
 import pool from "../config/db.js";
 import { authRequired, requireRole } from "../middleware/auth.js";
 import multer from "multer";
-import nodemailer from "nodemailer";
+import { sendTicketEmail } from "../utils/sendEmail.js";
+
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 const router = Router();
 
-/* ======================
-      EMAIL CONFIG
-   ====================== */
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
-async function sendTicketEmail({ to, cc, ticket, categoryName, subcategoryName, ownerName }) {
-  if (!to) return;
-
-  const subject = `[Ticket #${ticket.id}] ${ticket.title}`;
-  const text = `
-Hi ${ownerName || "Team"},
-
-A new ticket has been created.
-
-Category    : ${categoryName || "-"}
-Subcategory : ${subcategoryName || "-"}
-Title       : ${ticket.title}
-Description : ${ticket.description || "-"}
-Priority    : ${ticket.priority || "-"}
-Status      : ${ticket.status || "-"}
-Due Date    : ${ticket.due_date || "-"}
-
-Please login to the Ticket Dashboard to take action.
-
-Thanks,
-Ticket System
-  `.trim();
-
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || "noreply@yourdomain.com",
-    to,
-    cc: cc || undefined,
-    subject,
-    text,
-  });
-}
 
 /* ======================
       LIST TICKETS
@@ -582,7 +539,7 @@ router.post(
         subcategory_id,
       } = req.body;
 
-      console.log("Incoming body:", req.body);
+
 
       if (!title || !title.trim()) {
         conn.release();
@@ -633,7 +590,7 @@ router.post(
         }
       }
 
-      console.log("Final assignee after subcategory logic:", assignedToFinal);
+     // console.log("Final assignee after subcategory logic:", assignedToFinal);
 
       // 🔹 If we have an assignee but still no email, fetch user info
       if (assignedToFinal && !ownerEmail) {
@@ -709,6 +666,7 @@ router.post(
           subcategoryName,
           ownerName,
         });
+        console.log("successfull send email for ticket creation");
       } catch (mailErr) {
         console.error("Failed to send ticket email:", mailErr);
       }
