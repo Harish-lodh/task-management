@@ -3,7 +3,7 @@ import { Router } from "express";
 import pool from "../config/db.js";
 import { authRequired, requireRole } from "../middleware/auth.js";
 import multer from "multer";
-import { sendTicketEmail } from "../utils/sendEmail.js";
+import { sendTicketEmail, sendTicketCompletedEmail } from "../utils/sendEmail.js";
 
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -590,7 +590,7 @@ router.post(
         }
       }
 
-     // console.log("Final assignee after subcategory logic:", assignedToFinal);
+      // console.log("Final assignee after subcategory logic:", assignedToFinal);
 
       // 🔹 If we have an assignee but still no email, fetch user info
       if (assignedToFinal && !ownerEmail) {
@@ -691,6 +691,57 @@ router.post(
    ====================== */
 
 /* ---------- PATCH /api/tickets/:id ---------- */
+// router.patch("/:id", authRequired, async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     let {
+//       title,
+//       description,
+//       status,
+//       priority,
+//       due_date,
+//       assigned_to,
+
+//       // allow updating category mapping too (optional)
+//       category_id,
+//       subcategory_id,
+//     } = req.body;
+
+//     console.log("Ticket update payload:", req.body);
+
+//     const [result] = await pool.query(
+//       `UPDATE tickets
+//        SET
+//          title         = COALESCE(?, title),
+//          description   = COALESCE(?, description),
+//          status        = COALESCE(?, status),
+//          priority      = COALESCE(?, priority),
+//          due_date      = COALESCE(?, due_date),
+//          assigned_to   = COALESCE(?, assigned_to),
+//          category_id   = COALESCE(?, category_id),
+//          subcategory_id= COALESCE(?, subcategory_id)
+//        WHERE id = ?`,
+//       [
+//         title ?? null,
+//         description ?? null,
+//         status ?? null,
+//         priority ?? null,
+//         due_date ?? null,
+//         assigned_to ?? null,
+//         category_id ?? null,
+//         subcategory_id ?? null,
+//         id,
+//       ]
+//     );
+
+//     res.json({ message: "Ticket updated", changedRows: result.affectedRows });
+//   } catch (err) {
+//     console.error("Update ticket error:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
+
+
 router.patch("/:id", authRequired, async (req, res) => {
   try {
     const id = req.params.id;
@@ -701,26 +752,33 @@ router.patch("/:id", authRequired, async (req, res) => {
       priority,
       due_date,
       assigned_to,
-
-      // allow updating category mapping too (optional)
       category_id,
       subcategory_id,
     } = req.body;
 
     console.log("Ticket update payload:", req.body);
 
+    // 1️⃣ Get existing ticket before update
+    const [[oldTicket]] = await pool.query(
+      "SELECT * FROM tickets WHERE id = ?",
+      [id]
+    );
+    if (!oldTicket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    // 2️⃣ Update ticket
     const [result] = await pool.query(
-      `UPDATE tickets
-       SET
-         title         = COALESCE(?, title),
-         description   = COALESCE(?, description),
-         status        = COALESCE(?, status),
-         priority      = COALESCE(?, priority),
-         due_date      = COALESCE(?, due_date),
-         assigned_to   = COALESCE(?, assigned_to),
-         category_id   = COALESCE(?, category_id),
-         subcategory_id= COALESCE(?, subcategory_id)
-       WHERE id = ?`,
+      `UPDATE tickets SET
+        title = COALESCE(?, title),
+        description = COALESCE(?, description),
+        status = COALESCE(?, status),
+        priority = COALESCE(?, priority),
+        due_date = COALESCE(?, due_date),
+        assigned_to = COALESCE(?, assigned_to),
+        category_id = COALESCE(?, category_id),
+        subcategory_id = COALESCE(?, subcategory_id)
+      WHERE id = ?`,
       [
         title ?? null,
         description ?? null,
@@ -734,12 +792,52 @@ router.patch("/:id", authRequired, async (req, res) => {
       ]
     );
 
+    // 3️⃣ If status changed to completed — send email
+    const newStatus = status ?? oldTicket.status;
+
+    if (status && oldTicket.status !== "completed" && newStatus === "completed") {
+      console.log("Ticket completed — sending email...");
+
+      // Re-load updated ticket with category & subcategory names
+      const [[ticketRow]] = await pool.query(
+        `SELECT 
+           t.*,
+           tc.name AS category_name,
+           ts.name AS subcategory_name
+         FROM tickets t
+         LEFT JOIN ticket_categories tc ON tc.id = t.category_id
+         LEFT JOIN ticket_subcategories ts ON ts.id = t.subcategory_id
+         WHERE t.id = ?`,
+        [id]
+      );
+     console.log(ticketRow)
+      if (!ticketRow) {
+        console.warn("Ticket not found after update for email sending");
+      } else {
+        // Get owner/user email (ticket creator)
+        const [[owner]] = await pool.query(
+          "SELECT name, email FROM users WHERE id = ?",
+          [ticketRow.created_by]
+        );
+
+        await sendTicketCompletedEmail({
+          to: owner?.email,
+          ticket: ticketRow,      // full ticket row, no manual summary here
+          ownerName: owner?.name,
+        });
+
+        console.log("Completion email sent.");
+      }
+    }
+
     res.json({ message: "Ticket updated", changedRows: result.affectedRows });
   } catch (err) {
     console.error("Update ticket error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
 
 /* ======================
    DOWNLOAD ATTACHMENT

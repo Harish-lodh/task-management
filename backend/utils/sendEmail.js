@@ -52,3 +52,41 @@ Ticket System
     text,
   });
 }
+
+
+export async function sendTicketCompletedEmail({
+  to,
+  cc,
+  ticket,
+  ownerName,
+}) {
+  if (!to) return;
+
+  const subject = `[Ticket #${ticket.id}] Ticket Resolved`;
+
+  const text = `
+Hi ${ownerName || "Team"},
+
+Your ticket has been resolved successfully.
+
+✔ Title       : ${ticket.title}
+✔ Category    : ${ticket.category_name || "-"}
+✔ Subcategory : ${ticket.subcategory_name || "-"}
+✔ Description : ${ticket.description || "-"}
+✔ Priority    : ${ticket.priority || "-"}
+✔ Status      : Completed
+
+You can review the ticket on incident.fintreefinance.com
+
+Thanks,
+Ticket System
+  `.trim();
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || "noreply@yourdomain.com",
+    to,
+    cc: cc || undefined,
+    subject,
+    text,
+  });
+}
